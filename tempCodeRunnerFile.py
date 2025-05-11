@@ -10,16 +10,18 @@ app.secret_key = os.urandom(24)
 STUDENT_ACCOUNTS = {
     "khang.2302700102@st.umt.edu.vn": {"password": "123", "full_name": "Nguyễn Văn Khang", "major": "Công nghệ thông tin"},
     "minh.2301122334@st.umt.edu.vn": {"password": "123", "full_name": "Trần Thị Minh", "major": "Quản trị Kinh doanh"},
+    "lan.2305566778@st.umt.edu.vn": {"password": "123", "full_name": "Lê Thị Lan", "major": "Ngôn ngữ Anh"}
 }
 FACULTY_ACCOUNTS = {
     "gv_khang.2302700102": {"password": "123", "full_name": "Nguyễn Văn Khang (GV)", "department": "Khoa Công nghệ Thông tin"},
+    "gv_thanh.1234": {"password": "123", "full_name": "Phạm Văn Thành (GV)", "department": "Khoa Kinh tế"},
 }
 
 # --- Dữ liệu Mẫu khác ---
 student_courses_sample = [
-    {"id": "CS101", "name": "Nhập môn Lập trình", "schedule": "Thứ 2, Tiết 1-3", "code": "BIT101V1"},
-    {"id": "MA101", "name": "Toán cao cấp A1", "schedule": "Thứ 3, Tiết 4-6", "code": "MAT101V1"},
-    {"id": "EN101", "name": "Tiếng Anh học thuật 1", "schedule": "Thứ 4, Tiết 1-3", "code": "ENG101V1"},
+    {"id": "CS101", "name": "Nhập môn Lập trình", "schedule": "Thứ 2, Tiết 1-3"},
+    {"id": "MA101", "name": "Toán cao cấp A1", "schedule": "Thứ 3, Tiết 4-6"},
+    {"id": "EN101", "name": "Tiếng Anh học thuật 1", "schedule": "Thứ 4, Tiết 1-3"},
 ]
 faculty_courses_sample = [ 
     {"id": "CS101", "name": "Nhập môn Lập trình", "credits": 3, "student_count": 100},
@@ -29,48 +31,47 @@ teaching_schedule_sample = [
 ]
 
 today = datetime.date.today()
-# Thêm chi tiết cho sự kiện lịch (lecturer, location, eventType, credits)
-# Add details to calendar events (lecturer, location, eventType, credits)
+# Cập nhật raw_student_calendar_events_sample để có material_url
+# Update raw_student_calendar_events_sample to include material_url
 raw_student_calendar_events_sample = [
     {
-        "id": "event1", "course_id": "CS101", "title": "Nhập môn Lập trình", "course_code": "BIT101V1",
+        "id": "event1", "course_id": "CS101", "title": "Nhập môn Lập trình - Buổi 1", 
         "date": today.strftime("%Y-%m-%d"), "start_time": "07:30", "end_time": "09:30", 
-        "lecturer_materials_url": "#",
-        "material_url": "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf",
-        "lecturer": "Huỳnh Lê Phú Trung", "location": "P.512, Tòa nhà Sáng tạo", "eventType": "LAB-1", "credits": 3
+        "lecturer_materials_url": "#", # Giữ lại cho modal
+        "material_url": "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf" # URL PDF mẫu
     },
     {
-        "id": "event2", "course_id": "MA101", "title": "Toán cao cấp A1", "course_code": "MAT101V1",
+        "id": "event2", "course_id": "MA101", "title": "Toán cao cấp A1 - Buổi 1", 
         "date": (today + datetime.timedelta(days=1)).strftime("%Y-%m-%d"), "start_time": "09:45", "end_time": "11:45", 
-        "lecturer_materials_url": "#", "material_url": None,
-        "lecturer": "Đỗ Văn Nhơn", "location": "P.801, Tòa nhà Sáng tạo", "eventType": "LEC", "credits": 3
+        "lecturer_materials_url": "#",
+        "material_url": None # Ví dụ buổi này không có tài liệu
     },
     { 
-        "id": "event3", "course_id": "CS101", "title": "Nhập môn Lập trình", "course_code": "BIT101V1",
+        "id": "event3", "course_id": "CS101", "title": "Nhập môn Lập trình - Buổi 2", 
         "date": (today + datetime.timedelta(days=7)).strftime("%Y-%m-%d"), "start_time": "07:30", "end_time": "09:30", 
-        "lecturer_materials_url": "#", "material_url": "https://www.clickdimensions.com/links/TestPDFfile.pdf",
-        "lecturer": "Huỳnh Lê Phú Trung", "location": "P.512, Tòa nhà Sáng tạo", "eventType": "LAB-1", "credits": 3
+        "lecturer_materials_url": "#",
+        "material_url": "https://www.clickdimensions.com/links/TestPDFfile.pdf" # URL PDF mẫu khác
     },
     { 
-        "id": "event4", "course_id": "CS101", "title": "Nhập môn Lập trình (Lab)", "course_code": "BIT101V1",
-        "date": (today + datetime.timedelta(days=today.weekday() + 5 if today.weekday() < 4 else 5 )).strftime("%Y-%m-%d"), # Thứ 6 tuần này
-        "start_time": "13:30", "end_time": "15:30", "lecturer_materials_url": "#", "material_url": None,
-        "lecturer": "Võ Thị Thanh Vân", "location": "P.506, Tòa nhà Sáng tạo", "eventType": "LEC", "credits": 3
+        "id": "event4", "course_id": "CS101", "title": "Nhập môn Lập trình - Buổi 3 (Lab)", 
+        "date": (today + datetime.timedelta(days=9)).strftime("%Y-%m-%d"), "start_time": "13:30", "end_time": "15:30",
+        "lecturer_materials_url": "#",
+        "material_url": None # Lab không có slide
     },
     {
-        "id": "event5", "course_id": "EN101", "title": "Tiếng Anh học thuật 1", "course_code": "ENG101V1",
-        "date": (today + datetime.timedelta(days=2)).strftime("%Y-%m-%d"), "start_time": "09:45", "end_time": "11:45", 
-        "lecturer_materials_url": "#", "material_url": "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf",
-        "lecturer": "Đoàn Văn Phúc", "location": "P.404, Tòa nhà Sáng tạo", "eventType": "LEC", "credits": 2
+        "id": "event5", "course_id": "EN101", "title": "Tiếng Anh học thuật 1 - Buổi 1", 
+        "date": (today + datetime.timedelta(days=3)).strftime("%Y-%m-%d"), "start_time": "09:45", "end_time": "11:45", 
+        "lecturer_materials_url": "#",
+        "material_url": "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf"
     },
 ]
 
 # --- Custom Jinja Filter ---
 @app.template_filter('format_date_display')
-def format_date_display_filter(value, format_str='%d/%m/%Y'):
+def format_date_display_filter(value):
     try:
         date_obj = datetime.datetime.strptime(value, '%Y-%m-%d')
-        return date_obj.strftime(format_str)
+        return date_obj.strftime('%d/%m/%Y')
     except (ValueError, TypeError):
         return value
 
@@ -142,20 +143,29 @@ def student_session_note(course_id, date_str):
     if not session.get('logged_in') or session.get('role') != 'student':
         flash('Vui lòng đăng nhập với tư cách sinh viên.', 'warning')
         return redirect(url_for('login'))
+    
     course = next((c for c in student_courses_sample if c["id"] == course_id), None)
     if not course:
         flash('Không tìm thấy môn học.', 'danger')
         return redirect(url_for('student_dashboard')) 
+    
     try:
         datetime.datetime.strptime(date_str, '%Y-%m-%d')
     except ValueError:
         flash('Định dạng ngày không hợp lệ.', 'danger')
         return redirect(url_for('student_course_notes_overview', course_id=course_id))
+
+    # Tìm buổi học (event) tương ứng để lấy material_url
+    # Find the corresponding session (event) to get material_url
     session_event_data = next((evt for evt in raw_student_calendar_events_sample if evt['course_id'] == course_id and evt['date'] == date_str), None)
     material_url_for_session = session_event_data.get('material_url') if session_event_data else None
+
     user_display_info = { "name": session.get('full_name') }
-    return render_template('notes_template.html', course=course, note_date=date_str, 
-                           user=user_display_info, material_url=material_url_for_session)
+    return render_template('notes_template.html', 
+                           course=course, 
+                           note_date=date_str, 
+                           user=user_display_info,
+                           material_url=material_url_for_session) # Truyền URL tài liệu vào template
 
 @app.route('/student/notes/<course_id>')
 def student_course_notes_overview(course_id):
@@ -172,16 +182,26 @@ def student_course_notes_overview(course_id):
     ]
     course_sessions.sort(key=lambda x: datetime.datetime.strptime(x['date'], '%Y-%m-%d'))
     user_display_info = { "name": session.get('full_name') }
-    return render_template('course_notes_overview.html', course=course, 
-                           sessions=course_sessions, user=user_display_info)
+    return render_template('course_notes_overview.html', 
+                           course=course, 
+                           sessions=course_sessions, 
+                           user=user_display_info)
 
 @app.route('/student/materials/<course_id>/<event_date>')
 def get_student_materials(course_id, event_date):
     if not session.get('logged_in') or session.get('role') != 'student':
         return {"error": "Unauthorized"}, 401
+    
+    # Tìm thông tin buổi học để lấy danh sách tài liệu (nếu có nhiều)
+    # For this demo, we'll just return a generic list based on the old logic
+    # In a real app, you'd fetch specific materials for this event_date
     course = next((c for c in student_courses_sample if c["id"] == course_id), None)
     if not course: return {"error": "Course not found"}, 404
-    materials = [f"Slide {course['name']} - Buổi {event_date}.pdf", f"Bài tập {event_date}.docx"]
+    
+    # Tìm event cụ thể để lấy lecturer_materials_url nếu cần
+    # This route is mainly for the modal, which might show a general link or specific files
+    # For now, let's return a generic list.
+    materials = [f"Slide {course['name']} - Buổi {event_date}.pdf", f"Bài tập {event_date}.docx", "Link tham khảo: example.com"]
     return {"course_name": course['name'], "event_date": event_date, "materials": materials}
 
 @app.route('/faculty/dashboard')
