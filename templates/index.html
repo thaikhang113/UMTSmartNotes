@@ -28,7 +28,6 @@
         #current-month-year { font-size: 1.5rem; font-weight: 600; color: #1f2937; margin-top: 0.5rem; }
         .calendar-nav-group { display: flex; align-items: center; margin-top: 0.5rem;}
 
-        /* Month View */
         .calendar-grid-month { display: grid; grid-template-columns: repeat(7, 1fr); gap: 1px; background-color: #d1d5db; border: 1px solid #d1d5db; border-radius: 0.5rem; overflow: hidden; min-height: 400px; }
         .calendar-day-header { text-align: center; padding: 0.5rem; background-color: #f9fafb; font-weight: 500; color: #4b5563; font-size: 0.875rem; }
         .calendar-day-cell { background-color: white; min-height: 100px; padding: 0.5rem; position: relative; font-size: 0.875rem; }
@@ -37,7 +36,6 @@
         .calendar-event-item-month { background-color: #bfdbfe; color: #1e40af; padding: 0.25rem 0.5rem; border-radius: 0.25rem; margin-bottom: 0.25rem; font-size: 0.75rem; cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .calendar-event-item-month:hover { background-color: #93c5fd; }
 
-        /* Week View */
         .calendar-grid-week { display: grid; grid-template-columns: repeat(7, 1fr); gap: 1px; background-color: #d1d5db; border: 1px solid #d1d5db; border-radius: 0.5rem; overflow: hidden; min-height: 400px; }
         .week-day-column { background-color: white; min-height: 300px; padding: 0.5rem; border-right: 1px solid #e5e7eb; display: flex; flex-direction: column; }
         .week-day-column:last-child { border-right: none; }
@@ -47,7 +45,6 @@
         .week-event-time { font-weight: 500; font-size: 0.75rem; }
         .week-event-title { font-size: 0.8rem; }
 
-        /* Day/List View */
         .calendar-list-day { padding: 1rem; background-color: #f9fafb; border-radius: 0.5rem; border: 1px solid #e5e7eb; min-height: 400px;}
         .list-event-item { background-color: white; padding: 1rem; border-radius: 0.5rem; margin-bottom: 0.75rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1); cursor: pointer; transition: box-shadow 0.2s; }
         .list-event-item:hover { box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
@@ -151,6 +148,7 @@
                 if (targetSection) {
                     targetSection.classList.add('active');
                     if (targetId === 'detailed_schedule_section') {
+                        console.log("Switching to detailed_schedule_section. Initializing calendar.");
                         currentDate = new Date(); 
                         currentView = 'month'; 
                         updateActiveViewButton(currentView); 
@@ -194,6 +192,8 @@
             
             let calendarEvents = [];
             try { calendarEvents = JSON.parse(document.getElementById('calendar-data').textContent || '[]'); } catch (e) { console.error("Lỗi phân tích dữ liệu lịch:", e); }
+            console.log("Initial Calendar Events Loaded:", calendarEvents);
+
 
             function updateCalendarHeader() {
                 if (!currentMonthYearDisplay) return; 
@@ -208,18 +208,21 @@
                 } else if (currentView === 'day') {
                     currentMonthYearDisplay.textContent = `${getDayName(currentDate)}, ${getFormattedDate(currentDate)}`;
                 }
+                 console.log("[Header Update] View:", currentView, "Date:", currentDate.toLocaleDateString());
             }
             
             function renderCalendar() {
                 if (!calendarDisplay) {
-                    console.error("Calendar display element not found!");
+                    console.error("Lỗi: Không tìm thấy #calendar-display.");
                     return; 
                 }
                 updateCalendarHeader();
-                calendarDisplay.innerHTML = ''; 
+                calendarDisplay.innerHTML = ''; // Xóa nội dung cũ RẤT QUAN TRỌNG
+                console.log(`[Render] View: ${currentView}, Date: ${currentDate.toLocaleDateString()}, Events Count: ${calendarEvents.length}`);
                 
                 if (!calendarEvents || calendarEvents.length === 0) {
                     calendarDisplay.innerHTML = '<p class="no-events-message">Không có dữ liệu lịch để hiển thị.</p>';
+                    console.log("[Render] No calendar data.");
                     return;
                 }
 
@@ -228,6 +231,7 @@
                 else if (currentView === 'day') renderDayListView(currentDate);
                 else { 
                     calendarDisplay.innerHTML = '<p class="no-events-message">Lỗi: Chế độ xem không hợp lệ.</p>';
+                    console.error("[Render] Invalid calendar view:", currentView);
                 }
             }
             
@@ -236,9 +240,11 @@
                     if(btn) btn.classList.toggle('active-view', btn.dataset.view === activeView);
                 });
                 currentView = activeView; 
+                console.log("[View Change] Active view set to:", activeView);
             }
             
             function renderMonthView(year, month) {
+                console.log(`[MonthView] Rendering for ${year}-${month + 1}`);
                 if (!calendarDisplay) return;
                 calendarDisplay.className = 'calendar-grid-month'; 
                 const daysOfWeek = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7']; 
@@ -264,7 +270,10 @@
                     cell.appendChild(dayNumber);
                     const currentDateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
                     const dayEvents = calendarEvents.filter(event => event.date === currentDateStr);
-                    if (dayEvents.length > 0) hasEventsThisMonth = true;
+                    if (dayEvents.length > 0) {
+                        hasEventsThisMonth = true;
+                        console.log(`[MonthView] Events on ${currentDateStr}:`, dayEvents.length);
+                    }
                     dayEvents.forEach(event => {
                         const eventEl = document.createElement('div');
                         eventEl.className = 'calendar-event-item-month';
@@ -281,18 +290,21 @@
                     const cell = document.createElement('div');
                     cell.className = 'calendar-day-cell other-month'; calendarDisplay.appendChild(cell);
                 }
-                if (!hasEventsThisMonth && calendarEvents.length > 0) { // Chỉ hiển thị nếu có sự kiện nào đó trong dữ liệu tổng thể
+                if (!hasEventsThisMonth && calendarEvents.length > 0) {
                      calendarDisplay.innerHTML = '<p class="no-events-message col-span-7">Không có sự kiện nào cho tháng này.</p>';
-                } else if (calendarEvents.length === 0) { // Nếu không có dữ liệu lịch nào cả
-                     calendarDisplay.innerHTML = '<p class="no-events-message col-span-7">Không có dữ liệu lịch.</p>';
+                     console.log("[MonthView] No events found for this month, but global events exist.");
+                } else if (calendarEvents.length === 0) { // Trường hợp này đã được xử lý ở renderCalendar
+                    // console.log("[MonthView] No global calendar events.");
                 }
+                 console.log("[MonthView] Render complete.");
             }
             
             function renderWeekView(dateForWeek) {
+                console.log("[WeekView] Rendering for week of:", dateForWeek.toLocaleDateString());
                 if (!calendarDisplay) return;
                 calendarDisplay.innerHTML = ''; 
                 calendarDisplay.className = 'calendar-grid-week';
-                const daysOfWeek = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN']; // Thứ Hai là đầu tuần
+                const daysOfWeek = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
                 const startOfWeek = new Date(dateForWeek);
                 startOfWeek.setDate(dateForWeek.getDate() - dateForWeek.getDay() + (dateForWeek.getDay() === 0 ? -6 : 1)); 
                 let hasEventsThisWeek = false;
@@ -308,7 +320,10 @@
                     dayColumn.appendChild(dayHeader);
                     const currentDateStr = `${currentDayInWeek.getFullYear()}-${String(currentDayInWeek.getMonth() + 1).padStart(2, '0')}-${String(currentDayInWeek.getDate()).padStart(2, '0')}`;
                     const dayEvents = calendarEvents.filter(event => event.date === currentDateStr).sort((a,b) => a.start_time.localeCompare(b.start_time));
-                    if (dayEvents.length > 0) hasEventsThisWeek = true;
+                    if (dayEvents.length > 0) {
+                        hasEventsThisWeek = true;
+                        console.log(`[WeekView] Events on ${currentDateStr}:`, dayEvents.length);
+                    }
                     dayEvents.forEach(event => {
                         const eventEl = document.createElement('div');
                         eventEl.className = 'week-event-item';
@@ -320,12 +335,15 @@
                 }
                 if (!hasEventsThisWeek && calendarEvents.length > 0) {
                      calendarDisplay.innerHTML = '<p class="no-events-message col-span-7">Không có sự kiện nào cho tuần này.</p>';
+                     console.log("[WeekView] No events found for this week, but global events exist.");
                 } else if (calendarEvents.length === 0) {
-                     calendarDisplay.innerHTML = '<p class="no-events-message col-span-7">Không có dữ liệu lịch.</p>';
+                     // Đã xử lý ở renderCalendar
                 }
+                console.log("[WeekView] Render complete.");
             }
 
             function renderDayListView(dateForDay) {
+                console.log("[DayView] Rendering for date:", dateForDay.toLocaleDateString());
                 if (!calendarDisplay) return;
                 calendarDisplay.innerHTML = ''; 
                 calendarDisplay.className = 'calendar-list-day';
@@ -333,8 +351,10 @@
                 const dayEvents = calendarEvents.filter(event => event.date === currentDateStr).sort((a,b) => a.start_time.localeCompare(b.start_time));
                 if (dayEvents.length === 0) {
                     calendarDisplay.innerHTML = '<p class="no-events-message">Không có sự kiện nào cho ngày này.</p>';
+                    console.log("[DayView] No events for this day.");
                     return;
                 }
+                console.log(`[DayView] Events on ${currentDateStr}:`, dayEvents.length);
                 const listContainer = document.createElement('div');
                 dayEvents.forEach(event => {
                     const eventEl = document.createElement('div');
@@ -354,24 +374,12 @@
                     listContainer.appendChild(eventEl);
                 });
                 calendarDisplay.appendChild(listContainer);
+                console.log("[DayView] Render complete.");
             }
 
-            prevBtn?.addEventListener('click', () => {
-                if (currentView === 'month') currentDate.setMonth(currentDate.getMonth() - 1);
-                else if (currentView === 'week') currentDate.setDate(currentDate.getDate() - 7);
-                else if (currentView === 'day') currentDate.setDate(currentDate.getDate() - 1);
-                renderCalendar();
-            });
-            nextBtn?.addEventListener('click', () => {
-                if (currentView === 'month') currentDate.setMonth(currentDate.getMonth() + 1);
-                else if (currentView === 'week') currentDate.setDate(currentDate.getDate() + 7);
-                else if (currentView === 'day') currentDate.setDate(currentDate.getDate() + 1);
-                renderCalendar();
-            });
-            todayBtn?.addEventListener('click', () => { 
-                currentDate = new Date(); 
-                renderCalendar(); 
-            });
+            prevBtn?.addEventListener('click', () => { currentDate = new Date(currentDate); if (currentView === 'month') currentDate.setMonth(currentDate.getMonth() - 1); else if (currentView === 'week') currentDate.setDate(currentDate.getDate() - 7); else if (currentView === 'day') currentDate.setDate(currentDate.getDate() - 1); renderCalendar(); });
+            nextBtn?.addEventListener('click', () => { currentDate = new Date(currentDate); if (currentView === 'month') currentDate.setMonth(currentDate.getMonth() + 1); else if (currentView === 'week') currentDate.setDate(currentDate.getDate() + 7); else if (currentView === 'day') currentDate.setDate(currentDate.getDate() + 1); renderCalendar(); });
+            todayBtn?.addEventListener('click', () => { currentDate = new Date(); renderCalendar(); });
             
             [viewMonthBtn, viewWeekBtn, viewDayBtn].forEach(btn => {
                 if(btn) btn.addEventListener('click', function() { 
