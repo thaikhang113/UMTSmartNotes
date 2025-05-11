@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cổng thông tin Học thuật - UMT</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* CSS tùy chỉnh cho trang đăng nhập */
+        body {
+            font-family: 'Inter', sans-serif;
+            /* Hình nền mẫu, bạn có thể thay đổi URL này */
+            background-image: url('https://images.unsplash.com/photo-1505852699218-891883009715?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1920&q=80'); 
+            background-size: cover; /* Đảm bảo hình nền che phủ toàn bộ */
+            background-position: center; /* Căn giữa hình nền */
+            background-repeat: no-repeat; /* Không lặp lại hình nền */
+        }
+        .overlay {
+            background-color: rgba(255, 255, 255, 0.85); /* Lớp phủ màu trắng mờ để dễ đọc chữ */
+        }
+        .login-card {
+            transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out; /* Hiệu ứng chuyển động mượt mà */
+        }
+        .login-card:hover {
+            transform: translateY(-5px); /* Nâng thẻ lên một chút khi hover */
+            box-shadow: 0 10px 20px rgba(0,0,0,0.15); /* Thêm bóng đổ rõ hơn khi hover */
+        }
+        /* CSS cho các thông báo flash */
+        .alert {
+            padding: 0.75rem 1.25rem;
+            margin-bottom: 1rem;
+            border: 1px solid transparent;
+            border-radius: 0.25rem; /* bo góc nhẹ */
+        }
+        .alert-danger { /* Thông báo lỗi */
+            color: #721c24;
+            background-color: #f8d7da;
+            border-color: #f5c6cb;
+        }
+        .alert-success { /* Thông báo thành công */
+            color: #155724;
+            background-color: #d4edda;
+            border-color: #c3e6cb;
+        }
+        .alert-info { /* Thông báo thông tin */
+            color: #0c5460;
+            background-color: #d1ecf1;
+            border-color: #bee5eb;
+        }
+         .alert-warning { /* Thông báo cảnh báo */
+            color: #856404;
+            background-color: #fff3cd;
+            border-color: #ffeeba;
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen bg-gray-100">
+    <div class="overlay absolute inset-0"></div>
+    
+    <div class="relative container mx-auto p-4 md:p-8 text-center max-w-4xl">
+        <header class="mb-8 md:mb-12">
+            <h1 class="text-4xl md:text-5xl font-bold text-blue-700">Cổng thông tin Học thuật</h1>
+            <p class="mt-3 md:mt-4 text-base md:text-lg text-gray-600 max-w-2xl mx-auto">
+                Đăng nhập vào cổng thông tin để xem thông tin học tập, nhận thông báo cá nhân hóa và sử dụng các công cụ tự phục vụ của chúng tôi.
+                Truy cập mọi lúc, mọi nơi.
+            </p>
+        </header>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="mb-6 max-w-md mx-auto">
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} text-sm" role="alert">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-10">
+            <div class="login-card bg-white p-6 md:p-8 rounded-xl shadow-lg border border-blue-200">
+                <div class="flex justify-center mb-4">
+                    <svg class="w-16 h-16 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+                    </svg>
+                </div>
+                <h2 class="text-2xl font-semibold text-blue-600 mb-2">Cổng Sinh viên</h2>
+                <form action="{{ url_for('login') }}" method="POST" class="space-y-4">
+                    <input type="hidden" name="role" value="student">
+                    <div>
+                        <label for="student_username" class="sr-only">Tên đăng nhập Sinh viên</label>
+                        <input type="text" name="username" id="student_username" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500" placeholder="Tài khoản sinh viên (ví dụ: khang.id@st.umt.edu.vn)" required>
+                    </div>
+                    <div>
+                        <label for="student_password" class="sr-only">Mật khẩu</label>
+                        <input type="password" name="password" id="student_password" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500" placeholder="Mật khẩu" required>
+                    </div>
+                    <button type="submit" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-3 px-6 rounded-lg transition-colors text-base">
+                        Đăng nhập Sinh viên
+                    </button>
+                </form>
+            </div>
+
+            <div class="login-card bg-white p-6 md:p-8 rounded-xl shadow-lg border border-yellow-300">
+                 <div class="flex justify-center mb-4">
+                    <svg class="w-16 h-16 text-yellow-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M17.982 18.725A7.488 7.488 0 0012 15.75a7.488 7.488 0 00-5.982 2.975m11.963 0a9 9 0 10-11.963 0m11.963 0A8.966 8.966 0 0112 21a8.966 8.966 0 01-5.982-2.275M15 9.75a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                </div>
+                <h2 class="text-2xl font-semibold text-yellow-600 mb-2">Cổng Giảng viên</h2>
+                <form action="{{ url_for('login') }}" method="POST" class="space-y-4">
+                     <input type="hidden" name="role" value="faculty">
+                    <div>
+                        <label for="faculty_username" class="sr-only">Tên đăng nhập Giảng viên</label>
+                        <input type="text" name="username" id="faculty_username" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-yellow-500 focus:border-yellow-500" placeholder="Tài khoản giảng viên (ví dụ: gv_khang.id)" required>
+                    </div>
+                    <div>
+                        <label for="faculty_password" class="sr-only">Mật khẩu</label>
+                        <input type="password" name="password" id="faculty_password" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-yellow-500 focus:border-yellow-500" placeholder="Mật khẩu" required>
+                    </div>
+                    <button type="submit" class="w-full bg-yellow-500 hover:bg-yellow-600 text-white font-semibold py-3 px-6 rounded-lg transition-colors text-base">
+                        Đăng nhập Giảng viên
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <footer class="mt-10 md:mt-16 text-gray-500 text-sm">
+            <p>&copy; {{ current_year }} Trường Đại học Quản lý và Công nghệ UMT. </p>
+            <p>Liên hệ bộ phận hỗ trợ nếu bạn gặp sự cố khi đăng nhập.</p>
+        </footer>
+    </div>
+</body>
+</html>
