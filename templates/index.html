@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="vi">
 <head>
@@ -16,6 +17,7 @@
         .content-section { display: none; }
         .content-section.active { display: block; }
         
+        /* Modal không còn được sử dụng trực tiếp khi click lịch, nhưng giữ lại nếu cần sau này */
         .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.5); }
         .modal-content { background-color: #fefefe; margin: 5% auto; padding: 24px; border: 1px solid #888; width: 80%; max-width: 900px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
         .close-button { color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer; }
@@ -113,7 +115,16 @@
         <section id="settings" class="content-section"> <h2 class="text-3xl font-semibold text-gray-800 mb-6">Cài đặt</h2> <p>Nội dung cài đặt...</p> </section>
     </main>
 
-    <div id="event-detail-modal" class="modal"><div class="modal-content"><span class="close-button" id="close-modal-button">&times;</span><h3 id="modal-title" class="text-2xl font-semibold text-blue-700 mb-4">Chi tiết Buổi học</h3><div class="grid grid-cols-1 md:grid-cols-2 gap-6"><div id="material-pane" class="bg-gray-50 p-4 rounded-lg border"><h4 class="text-lg font-semibold text-gray-700 mb-3">Tài liệu Giảng viên</h4><div id="material-content" class="text-sm space-y-2"><p class="text-gray-500">Đang tải tài liệu...</p></div></div><div id="notes-pane" class="bg-gray-50 p-4 rounded-lg border"><h4 class="text-lg font-semibold text-gray-700 mb-3">Ghi chú nhanh</h4><textarea id="quick-note-area" class="w-full h-32 p-2 border rounded-md text-sm" placeholder="Ghi chú nhanh..."></textarea><div class="mt-3 flex justify-between items-center"><button id="save-quick-note" class="bg-green-500 hover:bg-green-600 text-white text-sm py-2 px-3 rounded-lg">Lưu</button><a id="full-notes-link" href="#" target="_blank" class="text-blue-500 hover:text-blue-700 text-sm">Mở ghi chú đầy đủ</a></div></div></div></div></div>
+    <div id="event-detail-modal" class="modal" style="display:none;">
+        <div class="modal-content">
+            <span class="close-button" id="close-modal-button">&times;</span>
+            <h3 id="modal-title" class="text-2xl font-semibold text-blue-700 mb-4">Chi tiết Buổi học</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div id="material-pane" class="bg-gray-50 p-4 rounded-lg border"><h4 class="text-lg font-semibold text-gray-700 mb-3">Tài liệu Giảng viên</h4><div id="material-content" class="text-sm space-y-2"><p class="text-gray-500">Đang tải tài liệu...</p></div></div>
+                <div id="notes-pane" class="bg-gray-50 p-4 rounded-lg border"><h4 class="text-lg font-semibold text-gray-700 mb-3">Ghi chú nhanh</h4><textarea id="quick-note-area" class="w-full h-32 p-2 border rounded-md text-sm" placeholder="Ghi chú nhanh..."></textarea><div class="mt-3 flex justify-between items-center"><button id="save-quick-note" class="bg-green-500 hover:bg-green-600 text-white text-sm py-2 px-3 rounded-lg">Lưu</button><a id="full-notes-link" href="#" target="_blank" class="text-blue-500 hover:text-blue-700 text-sm">Mở ghi chú đầy đủ</a></div></div>
+            </div>
+        </div>
+    </div>
 
     <script id="calendar-data" type="application/json">{{ calendar_events | tojson | safe }}</script>
     <script>
@@ -217,7 +228,7 @@
                     return; 
                 }
                 updateCalendarHeader();
-                calendarDisplay.innerHTML = ''; // Xóa nội dung cũ RẤT QUAN TRỌNG
+                calendarDisplay.innerHTML = ''; 
                 console.log(`[Render] View: ${currentView}, Date: ${currentDate.toLocaleDateString()}, Events Count: ${calendarEvents.length}`);
                 
                 if (!calendarEvents || calendarEvents.length === 0) {
@@ -272,14 +283,22 @@
                     const dayEvents = calendarEvents.filter(event => event.date === currentDateStr);
                     if (dayEvents.length > 0) {
                         hasEventsThisMonth = true;
-                        console.log(`[MonthView] Events on ${currentDateStr}:`, dayEvents.length);
                     }
                     dayEvents.forEach(event => {
                         const eventEl = document.createElement('div');
                         eventEl.className = 'calendar-event-item-month';
                         eventEl.textContent = `${event.start_time} ${event.title}`;
                         eventEl.title = `${event.start_time} - ${event.end_time}: ${event.title}`; 
-                        eventEl.addEventListener('click', () => showEventDetail(event)); 
+                        // THAY ĐỔI Ở ĐÂY: Điều hướng trực tiếp đến trang ghi chú
+                        eventEl.addEventListener('click', () => {
+                            if (event.notes_link) {
+                                window.location.href = event.notes_link;
+                            } else {
+                                console.error("Không tìm thấy notes_link cho sự kiện:", event);
+                                // Fallback nếu notes_link không có
+                                window.location.href = `/student/notes/${event.course_id}/${event.date}`;
+                            }
+                        }); 
                         cell.appendChild(eventEl);
                     });
                     calendarDisplay.appendChild(cell);
@@ -292,9 +311,6 @@
                 }
                 if (!hasEventsThisMonth && calendarEvents.length > 0) {
                      calendarDisplay.innerHTML = '<p class="no-events-message col-span-7">Không có sự kiện nào cho tháng này.</p>';
-                     console.log("[MonthView] No events found for this month, but global events exist.");
-                } else if (calendarEvents.length === 0) { // Trường hợp này đã được xử lý ở renderCalendar
-                    // console.log("[MonthView] No global calendar events.");
                 }
                  console.log("[MonthView] Render complete.");
             }
@@ -322,22 +338,25 @@
                     const dayEvents = calendarEvents.filter(event => event.date === currentDateStr).sort((a,b) => a.start_time.localeCompare(b.start_time));
                     if (dayEvents.length > 0) {
                         hasEventsThisWeek = true;
-                        console.log(`[WeekView] Events on ${currentDateStr}:`, dayEvents.length);
                     }
                     dayEvents.forEach(event => {
                         const eventEl = document.createElement('div');
                         eventEl.className = 'week-event-item';
                         eventEl.innerHTML = `<div class="week-event-time">${event.start_time} - ${event.end_time}</div><div class="week-event-title">${event.title}</div>`;
-                        eventEl.addEventListener('click', () => showEventDetail(event));
+                        // THAY ĐỔI Ở ĐÂY: Điều hướng trực tiếp đến trang ghi chú
+                        eventEl.addEventListener('click', () => {
+                            if (event.notes_link) {
+                                window.location.href = event.notes_link;
+                            } else {
+                                window.location.href = `/student/notes/${event.course_id}/${event.date}`;
+                            }
+                        });
                         dayColumn.appendChild(eventEl);
                     });
                     calendarDisplay.appendChild(dayColumn);
                 }
                 if (!hasEventsThisWeek && calendarEvents.length > 0) {
                      calendarDisplay.innerHTML = '<p class="no-events-message col-span-7">Không có sự kiện nào cho tuần này.</p>';
-                     console.log("[WeekView] No events found for this week, but global events exist.");
-                } else if (calendarEvents.length === 0) {
-                     // Đã xử lý ở renderCalendar
                 }
                 console.log("[WeekView] Render complete.");
             }
@@ -351,10 +370,8 @@
                 const dayEvents = calendarEvents.filter(event => event.date === currentDateStr).sort((a,b) => a.start_time.localeCompare(b.start_time));
                 if (dayEvents.length === 0) {
                     calendarDisplay.innerHTML = '<p class="no-events-message">Không có sự kiện nào cho ngày này.</p>';
-                    console.log("[DayView] No events for this day.");
                     return;
                 }
-                console.log(`[DayView] Events on ${currentDateStr}:`, dayEvents.length);
                 const listContainer = document.createElement('div');
                 dayEvents.forEach(event => {
                     const eventEl = document.createElement('div');
@@ -370,7 +387,14 @@
                             ${event.location ? `<span><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z"></path></svg> ${event.location}</span>` : ''}
                         </div>
                     `;
-                    eventEl.addEventListener('click', () => showEventDetail(event));
+                    // THAY ĐỔI Ở ĐÂY: Điều hướng trực tiếp đến trang ghi chú
+                    eventEl.addEventListener('click', () => {
+                        if (event.notes_link) {
+                            window.location.href = event.notes_link;
+                        } else {
+                            window.location.href = `/student/notes/${event.course_id}/${event.date}`;
+                        }
+                    });
                     listContainer.appendChild(eventEl);
                 });
                 calendarDisplay.appendChild(listContainer);
@@ -388,20 +412,14 @@
                 });
             });
             
-            // --- Event Modal Logic ---
-            const eventDetailModal = document.getElementById('event-detail-modal');
-            const closeModalButton = document.getElementById('close-modal-button');
-            const modalTitle = document.getElementById('modal-title');
-            const materialContent = document.getElementById('material-content');
-            const quickNoteArea = document.getElementById('quick-note-area');
-            const fullNotesLink = document.getElementById('full-notes-link');
-            const saveQuickNoteBtn = document.getElementById('save-quick-note');
-
-            async function showEventDetail(event) { /* ... (logic giữ nguyên) ... */ }
-            closeModalButton?.addEventListener('click', () => eventDetailModal.style.display = 'none');
-            window.addEventListener('click', (e) => { if (e.target == eventDetailModal) eventDetailModal.style.display = 'none'; });
-            saveQuickNoteBtn?.addEventListener('click', () => { /* ... (logic giữ nguyên) ... */ });
+            // Modal không còn được gọi trực tiếp từ click lịch nữa
+            // const eventDetailModal = document.getElementById('event-detail-modal');
+            // async function showEventDetail(event) { /* ... */ }
+            // document.getElementById('close-modal-button')?.addEventListener('click', () => eventDetailModal.style.display = 'none');
+            // window.addEventListener('click', (e) => { if (e.target == eventDetailModal) eventDetailModal.style.display = 'none'; });
+            // document.getElementById('save-quick-note')?.addEventListener('click', () => { /* ... */ });
         });
     </script>
 </body>
 </html>
+```
