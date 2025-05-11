@@ -131,10 +131,4 @@ def faculty_dashboard():
 
 # --- Chạy ứng dụng ---
 if __name__ == '__main__':
-    # Cập nhật student_calendar_events_sample sau khi các routes đã được định nghĩa
-    # để url_for hoạt động chính xác
-    with app.app_context():
-        for event in student_calendar_events_sample:
-            event['notes_link'] = url_for('student_notes', course_id=event['course_id'])
-
     app.run(debug=True)
