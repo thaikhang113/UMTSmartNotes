@@ -3,30 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ghi chú môn {{ course.name if course else 'Môn học' }} - Trợ lý học tập UMT</title>
+    <title>Ghi chú môn {{ course.name if course else 'Môn học' }} - Ngày {{ note_date if note_date else 'Không rõ' }}</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/heroicons/2.0.18/24/outline/heroicons.min.css" rel="stylesheet">
     <style>
-        /* CSS tùy chỉnh cho trang ghi chú */
         body { font-family: 'Inter', sans-serif; }
-        /* CSS cơ bản cho trình soạn thảo WYSIWYG (có thể mở rộng) */
         .editor-toolbar button {
-            background-color: #f3f4f6; /* Tailwind gray-100 */
-            border: 1px solid #d1d5db; /* Tailwind gray-300 */
-            padding: 0.5rem 0.75rem; /* Đệm nút */
-            margin-right: 0.25rem; /* Khoảng cách giữa các nút */
-            border-radius: 0.375rem; /* Bo góc nút (rounded-md) */
-            cursor: pointer;
+            background-color: #f3f4f6; border: 1px solid #d1d5db; padding: 0.5rem 0.75rem;
+            margin-right: 0.25rem; border-radius: 0.375rem; cursor: pointer;
         }
-        .editor-toolbar button:hover {
-            background-color: #e5e7eb; /* Tailwind gray-200 khi hover */
-        }
-        #note-content-area { /* Khu vực nội dung ghi chú */
-            min-height: 300px; /* Chiều cao tối thiểu */
-            border: 1px solid #d1d5db; /* Viền */
-            padding: 1rem; /* Đệm bên trong */
-            border-radius: 0.375rem; /* Bo góc (rounded-md) */
-            background-color: white; /* Màu nền */
+        .editor-toolbar button:hover { background-color: #e5e7eb; }
+        #note-content-area {
+            min-height: 400px; border: 1px solid #d1d5db; padding: 1rem;
+            border-radius: 0.375rem; background-color: white;
         }
     </style>
 </head>
@@ -34,33 +23,23 @@
     <div class="container mx-auto p-6 md:p-8">
         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8">
             <div>
-                <h1 class="text-2xl md:text-3xl font-bold text-blue-700">Ghi chú cho môn: {{ course.name if course else "Không rõ" }}</h1>
-                <p class="text-gray-600">Mã môn: {{ course.id if course else "N/A" }}</p>
+                <h1 class="text-2xl md:text-3xl font-bold text-blue-700">
+                    Ghi chú môn: {{ course.name if course else "Không rõ môn học" }}
+                </h1>
+                <p class="text-lg text-gray-600">Ngày: {{ note_date if note_date else "Không rõ ngày" }}</p>
+                <p class="text-sm text-gray-500">Mã môn: {{ course.id if course else "N/A" }}</p>
             </div>
             <a href="{{ url_for('student_dashboard') }}" class="mt-4 sm:mt-0 bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg transition-colors flex items-center self-start sm:self-center">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 mr-2">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3" />
                 </svg>
-                Quay lại Bảng điều khiển
+                Quay lại
             </a>
         </div>
 
         <div class="bg-white p-6 md:p-8 rounded-xl shadow-lg">
-            <div class="mb-6">
-                <h2 class="text-xl font-semibold text-gray-700 mb-3">Chọn mẫu ghi chú (Template)</h2>
-                <div class="flex flex-wrap gap-2">
-                    <button data-template="cornell" class="template-btn bg-gray-200 hover:bg-gray-300 text-gray-700 py-2 px-4 rounded-lg transition-colors">Cornell Notes</button>
-                    <button data-template="outline" class="template-btn bg-gray-200 hover:bg-gray-300 text-gray-700 py-2 px-4 rounded-lg transition-colors">Outline Method</button>
-                    <button data-template="charting" class="template-btn bg-gray-200 hover:bg-gray-300 text-gray-700 py-2 px-4 rounded-lg transition-colors">Charting Method</button>
-                    <button data-template="blank" class="template-btn bg-blue-100 hover:bg-blue-200 text-blue-700 py-2 px-4 rounded-lg transition-colors">Trang trống</button>
-                </div>
-                <p class="text-sm text-gray-500 mt-2">
-                    Gợi ý: Chọn một mẫu phù hợp để cấu trúc thông tin và hỗ trợ học tập hiệu quả.
-                </p>
-            </div>
-
             <div>
-                <h2 class="text-xl font-semibold text-gray-700 mb-3">Nội dung ghi chú</h2>
+                <h2 class="text-xl font-semibold text-gray-700 mb-3">Nội dung ghi chú cho buổi học</h2>
                 <div class="editor-toolbar mb-2">
                     <button onclick="formatDoc('bold');" title="In đậm"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0011.667 0l3.181-3.183m-4.991-2.691V5.25a2.25 2.25 0 00-2.25-2.25H5.25a2.25 2.25 0 00-2.25 2.25v4.992m14.006 0v4.992a2.25 2.25 0 01-2.25 2.25H5.25a2.25 2.25 0 01-2.25-2.25v-4.992" /></svg></button>
                     <button onclick="formatDoc('italic');" title="In nghiêng"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25H12" /></svg></button>
@@ -68,8 +47,7 @@
                     <button onclick="formatDoc('insertUnorderedList');" title="Danh sách gạch đầu dòng"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 6.75h7.5M8.25 12h7.5m-7.5 5.25h7.5M3.75 6.75h.007v.008H3.75V6.75zm.375 0a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM3.75 12h.007v.008H3.75V12zm.375 0a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM3.75 17.25h.007v.008H3.75v-.008zm.375 0a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" /></svg></button>
                 </div>
                 <div id="note-content-area" contenteditable="true" class="bg-gray-50">
-                    <p>Bắt đầu ghi chú của bạn ở đây...</p>
-                </div>
+                    </div>
                 <div class="mt-6 flex justify-end space-x-3">
                     <button class="bg-gray-500 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg transition-colors">Hủy</button>
                     <button id="save-note-button" class="bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-4 rounded-lg transition-colors">Lưu ghi chú</button>
@@ -78,126 +56,41 @@
         </div>
 
         <footer class="text-center mt-12 text-sm text-gray-500">
-            <p>&copy; <span id="current-year-footer">2025</span> UMT Learning Assistant. Phát triển dựa trên ý tưởng của sinh viên UMT.</p>
+            <p>&copy; <span id="current-year-footer-notes">2025</span> UMT Learning Assistant.</p>
         </footer>
     </div>
     <script>
-        // Hàm thực thi lệnh định dạng văn bản
         function formatDoc(command, value = null) {
             document.execCommand(command, false, value);
-            document.getElementById('note-content-area').focus(); // Giữ focus vào vùng soạn thảo
+            document.getElementById('note-content-area').focus();
         }
 
         const saveNoteButton = document.getElementById('save-note-button');
         const noteContentArea = document.getElementById('note-content-area');
-        // Lấy course ID từ template Flask (đảm bảo an toàn khi render)
-        const courseId = "{{ course.id | e if course else 'unknown_course' }}"; 
+        
+        // Lấy course_id và note_date từ dữ liệu được Flask truyền vào (ví dụ qua data attributes hoặc biến JS)
+        // Get course_id and note_date from data passed by Flask (e.g., via data attributes or JS variables)
+        const courseId = "{{ course.id | e if course else 'unknown_course' }}";
+        const noteDate = "{{ note_date | e if note_date else 'unknown_date' }}";
+        const noteStorageKey = `note_${courseId}_${noteDate}`;
 
-        // Tải ghi chú đã lưu từ localStorage nếu có
-        if (localStorage.getItem(`note_${courseId}`)) {
-            noteContentArea.innerHTML = localStorage.getItem(`note_${courseId}`);
+        // Tải ghi chú đã lưu từ localStorage khi trang được tải
+        // Load saved note from localStorage when the page loads
+        if (localStorage.getItem(noteStorageKey)) {
+            noteContentArea.innerHTML = localStorage.getItem(noteStorageKey);
+        } else {
+            noteContentArea.innerHTML = `<p>Bắt đầu ghi chú cho ngày ${noteDate} của môn ${courseId}...</p>`;
         }
 
-        // Sự kiện click cho nút Lưu ghi chú
         saveNoteButton.addEventListener('click', () => {
-            const noteContent = noteContentArea.innerHTML; // Lưu nội dung dưới dạng HTML
-            localStorage.setItem(`note_${courseId}`, noteContent);
-            alert('Ghi chú đã được lưu vào trình duyệt!');
-            // Trong ứng dụng thực tế, bạn sẽ gửi `noteContent` lên server để lưu vào database.
-            // Ví dụ: fetch('/student/save_note', { 
-            //          method: 'POST', 
-            //          headers: {'Content-Type': 'application/json'},
-            //          body: JSON.stringify({ course_id: courseId, content: noteContent }) 
-            //      });
+            const noteContent = noteContentArea.innerHTML;
+            localStorage.setItem(noteStorageKey, noteContent);
+            alert(`Ghi chú cho ngày ${noteDate} của môn ${courseId} đã được lưu!`);
         });
-
-        // Xử lý chọn template
-        const templateButtons = document.querySelectorAll('.template-btn');
-        templateButtons.forEach(button => {
-            button.addEventListener('click', function() {
-                const templateType = this.dataset.template;
-                applyTemplate(templateType);
-                // Cập nhật trạng thái active cho nút template
-                templateButtons.forEach(btn => {
-                    btn.classList.remove('bg-blue-500', 'text-white', 'border-blue-500');
-                    btn.classList.add('bg-gray-200', 'text-gray-700', 'hover:bg-gray-300');
-                     if(btn.dataset.template === 'blank' && templateType !== 'blank'){
-                        btn.classList.remove('bg-blue-100', 'text-blue-700', 'hover:bg-blue-200');
-                        btn.classList.add('bg-gray-200', 'text-gray-700', 'hover:bg-gray-300');
-                    }
-                });
-                if(templateType === 'blank'){
-                    this.classList.add('bg-blue-100', 'text-blue-700', 'hover:bg-blue-200');
-                    this.classList.remove('bg-gray-200', 'text-gray-700', 'hover:bg-gray-300');
-                } else {
-                    this.classList.add('bg-blue-500', 'text-white', 'border-blue-500');
-                    this.classList.remove('bg-gray-200', 'text-gray-700', 'hover:bg-gray-300');
-                }
-            });
-        });
-
-        // Hàm áp dụng template vào vùng soạn thảo
-        function applyTemplate(templateType) {
-            let templateHTML = '<p>Bắt đầu ghi chú của bạn ở đây...</p>'; // Mặc định là trang trống
-            if (templateType === 'cornell') {
-                templateHTML = `
-                    <table style="width:100%; border-collapse: collapse; border: 1px solid #ccc;">
-                        <tbody>
-                            <tr>
-                                <td style="width:70%; padding:8px; vertical-align:top; border: 1px solid #ccc;"><strong>Ghi chú chính (Notes)</strong><br><br><br><br><br><p>&nbsp;</p></td>
-                                <td style="width:30%; padding:8px; vertical-align:top; border: 1px solid #ccc;"><strong>Từ khóa/Câu hỏi (Cues)</strong><br><br><p>&nbsp;</p></td>
-                            </tr>
-                            <tr>
-                                <td colspan="2" style="padding:8px; vertical-align:top; border: 1px solid #ccc;"><strong>Tóm tắt (Summary)</strong><br><br><br><p>&nbsp;</p></td>
-                            </tr>
-                        </tbody>
-                    </table>
-                    <p>&nbsp;</p> `;
-            } else if (templateType === 'outline') {
-                templateHTML = `
-                    <h2><strong>Chủ đề chính</strong></h2>
-                    <ul>
-                        <li>Điểm chính 1
-                            <ul>
-                                <li>Chi tiết phụ a</li>
-                                <li>Chi tiết phụ b</li>
-                            </ul>
-                        </li>
-                        <li>Điểm chính 2</li>
-                    </ul>
-                     <p>&nbsp;</p>
-                `;
-            } else if (templateType === 'charting') {
-                 templateHTML = `
-                    <table style="width:100%; border-collapse: collapse; border: 1px solid #ccc;">
-                        <thead>
-                            <tr>
-                                <th style="padding:8px; border: 1px solid #ccc; background-color: #f0f0f0;">Khái niệm</th>
-                                <th style="padding:8px; border: 1px solid #ccc; background-color: #f0f0f0;">Định nghĩa</th>
-                                <th style="padding:8px; border: 1px solid #ccc; background-color: #f0f0f0;">Ví dụ</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td style="padding:8px; border: 1px solid #ccc;"><p>&nbsp;</p></td>
-                                <td style="padding:8px; border: 1px solid #ccc;"><p>&nbsp;</p></td>
-                                <td style="padding:8px; border: 1px solid #ccc;"><p>&nbsp;</p></td>
-                            </tr>
-                            <tr>
-                                <td style="padding:8px; border: 1px solid #ccc;"><p>&nbsp;</p></td>
-                                <td style="padding:8px; border: 1px solid #ccc;"><p>&nbsp;</p></td>
-                                <td style="padding:8px; border: 1px solid #ccc;"><p>&nbsp;</p></td>
-                            </tr>
-                        </tbody>
-                    </table>
-                     <p>&nbsp;</p>
-                `;
-            }
-            noteContentArea.innerHTML = templateHTML;
-            noteContentArea.focus(); // Đặt focus vào vùng soạn thảo sau khi áp dụng template
-        }
+        
         // Cập nhật năm hiện tại ở footer
-        document.getElementById('current-year-footer').textContent = new Date().getFullYear();
+        // Update current year in footer
+        document.getElementById('current-year-footer-notes').textContent = new Date().getFullYear();
     </script>
 </body>
 </html>
