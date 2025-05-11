@@ -7,12 +7,13 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/heroicons/2.0.18/24/outline/heroicons.min.css" rel="stylesheet">
     <style>
+        /* CSS tùy chỉnh cho trang tổng quan giảng viên */
         body { font-family: 'Inter', sans-serif; }
         .sidebar-icon { width: 24px; height: 24px; }
-        .active-nav-link { background-color: #2563eb; color: white; }
-        .nav-link:hover { background-color: #eff6ff; color: #1d4ed8; }
-        .content-section { display: none; }
-        .content-section.active { display: block; }
+        .active-nav-link { background-color: #2563eb; color: white; } /* Tailwind blue-600 */
+        .nav-link:hover { background-color: #eff6ff; color: #1d4ed8; } /* Tailwind blue-50 and blue-700 */
+        .content-section { display: none; } /* Ẩn các phần nội dung theo mặc định */
+        .content-section.active { display: block; } /* Hiển thị phần nội dung đang hoạt động */
     </style>
 </head>
 <body class="bg-gray-100 flex">
@@ -48,14 +49,14 @@
                         <span>Xem Ghi chú SV</span>
                     </a>
                 </li>
-                <li>
-                    <a href="{{ url_for('show_login_page') }}" class="nav-link flex items-center space-x-3 p-3 rounded-lg transition-colors mt-auto">
-                         <svg class="sidebar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9"></path></svg>
-                        <span>Đăng xuất</span>
-                    </a>
-                </li>
             </ul>
         </nav>
+        <div class="mt-auto">
+            <a href="{{ url_for('logout') }}" class="w-full block text-center bg-sky-800 hover:bg-sky-900 text-white p-3 rounded-lg transition-colors">
+                <svg class="inline-block sidebar-icon mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9"></path></svg>
+                Đăng xuất
+            </a>
+        </div>
     </aside>
 
     <main class="ml-64 flex-1 p-8 overflow-y-auto h-screen">
@@ -71,8 +72,7 @@
                     <h3 class="text-xl font-semibold text-gray-700 mb-2">Lịch dạy sắp tới</h3>
                     {% if teaching_schedule %}
                         <ul class="mt-2 space-y-2">
-                        {% for class_session in teaching_schedule[:2] %}
-                            <li class="text-sm text-gray-700 p-2 bg-sky-50 rounded-md">
+                        {% for class_session in teaching_schedule[:2] %} <li class="text-sm text-gray-700 p-2 bg-sky-50 rounded-md">
                                 <strong>{{ class_session.course_name }}</strong> - {{ class_session.date }} ({{ class_session.time }})
                                 <p class="text-xs text-gray-500">Phòng: {{ class_session.room }}</p>
                             </li>
@@ -84,8 +84,7 @@
                 </div>
                 <div class="bg-white p-6 rounded-xl shadow-lg">
                     <h3 class="text-xl font-semibold text-gray-700 mb-2">Thông báo mới</h3>
-                    <p class="text-gray-600">Chưa có thông báo nào.</p>
-                </div>
+                    <p class="text-gray-600">Chưa có thông báo nào.</p> </div>
             </div>
         </section>
 
@@ -93,17 +92,21 @@
             <h2 class="text-3xl font-semibold text-gray-800 mb-6">Quản lý Môn học</h2>
             <p class="text-gray-600 mb-4">Danh sách các môn học bạn đang phụ trách.</p>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {% for course in faculty_courses %}
-                <div class="bg-white p-6 rounded-xl shadow-lg">
-                    <h3 class="text-xl font-semibold text-sky-600 mb-2">{{ course.name }} ({{ course.id }})</h3>
-                    <p class="text-sm text-gray-500 mb-1">Số tín chỉ: {{ course.credits }}</p>
-                    <p class="text-sm text-gray-500 mb-3">Số lượng sinh viên: {{ course.student_count }}</p>
-                    <div class="space-x-2">
-                        <button class="bg-sky-500 hover:bg-sky-600 text-white text-sm py-2 px-3 rounded-lg">Xem chi tiết</button>
-                        <button class="bg-green-500 hover:bg-green-600 text-white text-sm py-2 px-3 rounded-lg">Tải tài liệu</button>
+                {% if faculty_courses %}
+                    {% for course in faculty_courses %}
+                    <div class="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow">
+                        <h3 class="text-xl font-semibold text-sky-600 mb-2">{{ course.name }} ({{ course.id }})</h3>
+                        <p class="text-sm text-gray-500 mb-1">Số tín chỉ: {{ course.credits }}</p>
+                        <p class="text-sm text-gray-500 mb-3">Số lượng sinh viên: {{ course.student_count }}</p>
+                        <div class="space-x-2 mt-4">
+                            <button class="bg-sky-500 hover:bg-sky-600 text-white text-sm font-medium py-2 px-3 rounded-lg transition-colors">Xem chi tiết</button>
+                            <button class="bg-green-500 hover:bg-green-600 text-white text-sm font-medium py-2 px-3 rounded-lg transition-colors">Tải tài liệu lên</button>
+                        </div>
                     </div>
-                </div>
-                {% endfor %}
+                    {% endfor %}
+                {% else %}
+                    <p class="text-gray-500 col-span-full">Bạn chưa được gán phụ trách môn học nào.</p>
+                {% endif %}
             </div>
         </section>
 
@@ -111,16 +114,14 @@
             <h2 class="text-3xl font-semibold text-gray-800 mb-6">Bài tập & Chấm điểm</h2>
             <p class="text-gray-600">Quản lý bài tập, xem bài nộp và thực hiện chấm điểm.</p>
             <div class="bg-white p-6 rounded-xl shadow-lg mt-4">
-                <p class="text-gray-500">Tính năng đang được phát triển.</p>
-            </div>
+                <p class="text-gray-500">Tính năng đang được phát triển.</p> </div>
         </section>
 
         <section id="faculty_student_notes" class="content-section">
             <h2 class="text-3xl font-semibold text-gray-800 mb-6">Xem Ghi chú Sinh viên</h2>
             <p class="text-gray-600">Xem lại các ghi chú của sinh viên trong các môn học bạn dạy (nếu được phép).</p>
             <div class="bg-white p-6 rounded-xl shadow-lg mt-4">
-                <p class="text-gray-500">Tính năng đang được phát triển và cần cân nhắc về quyền riêng tư.</p>
-            </div>
+                <p class="text-gray-500">Tính năng đang được phát triển và cần cân nhắc về quyền riêng tư.</p> </div>
         </section>
     </main>
 
@@ -128,34 +129,47 @@
         document.addEventListener('DOMContentLoaded', function () {
             const navLinks = document.querySelectorAll('.nav-link');
             const contentSections = document.querySelectorAll('.content-section');
-            const initialSectionId = 'faculty_main_dashboard';
+            const initialSectionId = 'faculty_main_dashboard'; // Phần mặc định cho giảng viên
 
-            const initialSection = document.getElementById(initialSectionId);
-            if (initialSection) {
-                initialSection.classList.add('active');
-            }
-             document.querySelector(`.nav-link[data-target="${initialSectionId}"]`)?.classList.add('active-nav-link');
+            // Hàm chuyển đổi giữa các phần nội dung
+            function switchSection(targetId) {
+                // Bỏ active tất cả các link (trừ link đăng xuất)
+                navLinks.forEach(nav => {
+                    if (nav.getAttribute('href') !== "{{ url_for('logout') }}") {
+                        nav.classList.remove('active-nav-link');
+                    }
+                });
+                // Ẩn tất cả các phần nội dung
+                contentSections.forEach(section => section.classList.remove('active'));
 
-            navLinks.forEach(link => {
-                // Bỏ qua link đăng xuất
-                if (link.getAttribute('href') === "{{ url_for('show_login_page') }}") {
-                    return;
+                // Active link được chọn
+                const activeLink = document.querySelector(`.nav-link[data-target="${targetId}"]`);
+                if (activeLink) {
+                    activeLink.classList.add('active-nav-link');
                 }
+                
+                // Hiển thị phần nội dung được chọn
+                const targetSection = document.getElementById(targetId);
+                if (targetSection) {
+                    targetSection.classList.add('active');
+                }
+            }
+
+            // Thiết lập phần nội dung và link active ban đầu
+            switchSection(initialSectionId);
+            
+            // Gán sự kiện click cho các link điều hướng
+            navLinks.forEach(link => {
+                // Nếu là nút đăng xuất, để hành vi mặc định của href xử lý
+                if (link.getAttribute('href') === "{{ url_for('logout') }}") {
+                    return; 
+                }
+
                 link.addEventListener('click', function (event) {
-                    event.preventDefault();
+                    event.preventDefault(); // Ngăn hành vi mặc định của thẻ a
                     const targetId = this.getAttribute('data-target');
-
-                    navLinks.forEach(nav => {
-                        if (nav.getAttribute('href') !== "{{ url_for('show_login_page') }}") {
-                           nav.classList.remove('active-nav-link');
-                        }
-                    });
-                    contentSections.forEach(section => section.classList.remove('active'));
-
-                    this.classList.add('active-nav-link');
-                    const targetSection = document.getElementById(targetId);
-                    if (targetSection) {
-                        targetSection.classList.add('active');
+                    if (targetId) { // Đảm bảo targetId tồn tại
+                        switchSection(targetId);
                     }
                 });
             });

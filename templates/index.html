@@ -7,52 +7,53 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/heroicons/2.0.18/24/outline/heroicons.min.css" rel="stylesheet">
     <style>
+        /* CSS tùy chỉnh cho trang tổng quan sinh viên */
         body {
-            font-family: 'Inter', sans-serif;
+            font-family: 'Inter', sans-serif; /* Sử dụng font Inter mặc định */
         }
         .sidebar-icon {
-            width: 24px;
+            width: 24px; /* Kích thước biểu tượng sidebar */
             height: 24px;
         }
-        .active-nav-link {
+        .active-nav-link { /* Kiểu cho mục menu đang hoạt động */
             background-color: #2563eb; /* Tailwind blue-600 */
             color: white;
         }
-        .nav-link:hover {
+        .nav-link:hover { /* Kiểu khi di chuột qua mục menu */
             background-color: #eff6ff; /* Tailwind blue-50 */
             color: #1d4ed8; /* Tailwind blue-700 */
         }
-        .content-section {
+        .content-section { /* Ẩn các phần nội dung theo mặc định */
             display: none;
         }
-        .content-section.active {
+        .content-section.active { /* Hiển thị phần nội dung đang hoạt động */
             display: block;
         }
-        /* Modal styles */
+        /* CSS cho Modal (cửa sổ chi tiết sự kiện) */
         .modal {
-            display: none; /* Hidden by default */
-            position: fixed;
-            z-index: 1000;
+            display: none; /* Ẩn theo mặc định */
+            position: fixed; /* Vị trí cố định trên màn hình */
+            z-index: 1000; /* Đảm bảo modal nằm trên các phần tử khác */
             left: 0;
             top: 0;
             width: 100%;
             height: 100%;
-            overflow: auto;
-            background-color: rgba(0,0,0,0.5); /* Black w/ opacity */
+            overflow: auto; /* Cho phép cuộn nếu nội dung modal dài */
+            background-color: rgba(0,0,0,0.5); /* Nền mờ màu đen */
         }
         .modal-content {
-            background-color: #fefefe;
-            margin: 5% auto; /* Responsive margin */
-            padding: 24px;
-            border: 1px solid #888;
-            width: 80%; /* Could be more or less, depending on screen size */
-            max-width: 900px; /* Max width */
-            border-radius: 12px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            background-color: #fefefe; /* Màu nền của nội dung modal */
+            margin: 5% auto; /* Căn giữa modal và có khoảng cách với viền màn hình */
+            padding: 24px; /* Khoảng đệm bên trong modal */
+            border: 1px solid #888; /* Viền modal */
+            width: 80%; /* Chiều rộng của modal, có thể điều chỉnh */
+            max-width: 900px; /* Chiều rộng tối đa */
+            border-radius: 12px; /* Bo góc modal */
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1); /* Bóng đổ cho modal */
         }
-        .close-button {
+        .close-button { /* Nút đóng modal */
             color: #aaa;
-            float: right;
+            float: right; /* Đặt ở góc phải */
             font-size: 28px;
             font-weight: bold;
         }
@@ -62,40 +63,41 @@
             text-decoration: none;
             cursor: pointer;
         }
-        /* Calendar placeholder styles */
+        /* CSS cho khu vực hiển thị lịch (placeholder) */
         .calendar-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); /* Responsive grid */
-            gap: 8px;
+            /* Tạo lưới đáp ứng, mỗi cột có chiều rộng tối thiểu 120px */
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); 
+            gap: 8px; /* Khoảng cách giữa các ô lịch */
             padding: 16px;
             border: 1px solid #e5e7eb; /* Tailwind gray-200 */
             border-radius: 8px;
-            min-height: 400px; /* Minimum height for the calendar area */
+            min-height: 400px; /* Chiều cao tối thiểu cho khu vực lịch */
             background-color: #f9fafb; /* Tailwind gray-50 */
         }
-        .calendar-day, .calendar-event-item {
+        .calendar-day, .calendar-event-item { /* Kiểu cho ngày và sự kiện trong lịch */
             background-color: white;
             padding: 12px;
             border-radius: 6px;
             border: 1px solid #d1d5db; /* Tailwind gray-300 */
             text-align: center;
-            cursor: pointer;
-            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+            cursor: pointer; /* Con trỏ chuột thay đổi khi di qua */
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out; /* Hiệu ứng chuyển động */
         }
         .calendar-day:hover, .calendar-event-item:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            transform: translateY(-2px); /* Nâng nhẹ khi hover */
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1); /* Thêm bóng đổ khi hover */
         }
-        .calendar-event-item {
-            background-color: #bfdbfe; /* Tailwind blue-200 for events */
+        .calendar-event-item { /* Kiểu riêng cho các mục sự kiện */
+            background-color: #bfdbfe; /* Tailwind blue-200 */
             border-color: #93c5fd; /* Tailwind blue-300 */
         }
-        .calendar-event-item strong {
+        .calendar-event-item strong { /* Tên sự kiện */
             display: block;
             font-size: 0.9em;
             margin-bottom: 4px;
         }
-         .calendar-event-item span {
+         .calendar-event-item span { /* Thông tin phụ của sự kiện */
             font-size: 0.8em;
             color: #4b5563; /* Tailwind gray-600 */
         }
@@ -149,7 +151,9 @@
             </ul>
         </nav>
         <div class="mt-auto">
-            <button class="w-full bg-blue-800 hover:bg-blue-900 text-white p-3 rounded-lg transition-colors">Đăng xuất</button>
+            <a href="{{ url_for('logout') }}" class="w-full block text-center bg-blue-800 hover:bg-blue-900 text-white p-3 rounded-lg transition-colors">
+                Đăng xuất
+            </a>
         </div>
     </aside>
 
@@ -170,7 +174,7 @@
                         {% for event in upcoming_events_dashboard %}
                             <li class="text-sm text-gray-700 p-2 bg-blue-50 rounded-md">
                                 <strong>{{ event.title }}</strong> - {{ event.date }} ({{ event.start_time }} - {{ event.end_time }})
-                                <a href="#" data-target="detailed_schedule_section" class="nav-link text-blue-500 hover:underline text-xs block mt-1">Xem chi tiết lịch</a>
+                                <a href="#" data-target="detailed_schedule_section" class="nav-link text-blue-500 hover:underline text-xs block mt-1 switch-to-calendar">Xem chi tiết lịch</a>
                             </li>
                         {% endfor %}
                         </ul>
@@ -217,7 +221,7 @@
                     <h3 class="text-xl font-semibold text-blue-600 mb-2">{{ course.name }}</h3>
                     <p class="text-sm text-gray-500 mb-1">Mã môn: {{ course.id }}</p>
                     <p class="text-sm text-gray-500 mb-3">Lịch học: {{ course.schedule }}</p>
-                    <a href="{{ url_for('notes', course_id=course.id) }}" class="inline-block bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg transition-colors">
+                    <a href="{{ url_for('student_notes', course_id=course.id) }}" class="inline-block bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg transition-colors">
                         Xem/Tạo ghi chú
                     </a>
                 </div>
@@ -259,7 +263,7 @@
                     <h3 class="text-lg font-medium text-gray-700">Thông tin tài khoản</h3>
                      <button class="mt-2 text-sm text-blue-500 hover:underline">Thay đổi mật khẩu</button>
                 </div>
-             </div>
+                </div>
         </section>
     </main>
 
@@ -296,39 +300,62 @@
         document.addEventListener('DOMContentLoaded', function () {
             const navLinks = document.querySelectorAll('.nav-link');
             const contentSections = document.querySelectorAll('.content-section');
-            const initialSectionId = 'dashboard'; // Mặc định hiển thị dashboard
+            const initialSectionId = 'dashboard'; // Mặc định hiển thị bảng điều khiển
 
-            // Hiển thị section mặc định
-            const initialSection = document.getElementById(initialSectionId);
-            if (initialSection) {
-                initialSection.classList.add('active');
-            }
-             // Đặt active cho link sidebar tương ứng
-            document.querySelector(`.nav-link[data-target="${initialSectionId}"]`)?.classList.add('active-nav-link');
-
-
-            navLinks.forEach(link => {
-                link.addEventListener('click', function (event) {
-                    event.preventDefault();
-                    const targetId = this.getAttribute('data-target');
-
-                    navLinks.forEach(nav => nav.classList.remove('active-nav-link'));
-                    contentSections.forEach(section => section.classList.remove('active'));
-
-                    this.classList.add('active-nav-link');
-                    const targetSection = document.getElementById(targetId);
-                    if (targetSection) {
-                        targetSection.classList.add('active');
-                        if (targetId === 'detailed_schedule_section') {
-                            // Mặc định hiển thị view tháng khi vào trang lịch
-                            renderCalendarView('month');
-                            updateCalendarViewButtons('month');
-                        }
+            // Hàm chuyển đổi giữa các phần nội dung
+            function switchSection(targetId) {
+                // Bỏ active tất cả các link điều hướng (trừ link đăng xuất)
+                navLinks.forEach(nav => {
+                    if (nav.getAttribute('href') !== "{{ url_for('logout') }}") { 
+                        nav.classList.remove('active-nav-link');
                     }
+                });
+                // Ẩn tất cả các phần nội dung
+                contentSections.forEach(section => section.classList.remove('active'));
+
+                // Active link điều hướng được chọn
+                const activeLink = document.querySelector(`.nav-link[data-target="${targetId}"]`);
+                if (activeLink) {
+                    activeLink.classList.add('active-nav-link');
+                }
+                // Hiển thị phần nội dung được chọn
+                const targetSection = document.getElementById(targetId);
+                if (targetSection) {
+                    targetSection.classList.add('active');
+                    // Nếu là phần lịch, mặc định hiển thị chế độ xem tháng
+                    if (targetId === 'detailed_schedule_section') {
+                        renderCalendarView('month'); 
+                        updateCalendarViewButtons('month');
+                    }
+                }
+            }
+
+            // Hiển thị phần nội dung ban đầu
+            switchSection(initialSectionId);
+
+            // Gán sự kiện click cho các link điều hướng
+            navLinks.forEach(link => {
+                // Bỏ qua link đăng xuất cho logic chuyển section
+                if (link.getAttribute('href') === "{{ url_for('logout') }}") {
+                    return;
+                }
+                link.addEventListener('click', function (event) {
+                    event.preventDefault(); // Ngăn hành vi mặc định của thẻ a
+                    const targetId = this.getAttribute('data-target');
+                    switchSection(targetId);
                 });
             });
 
-            // Xử lý Lịch học
+            // Xử lý link "Xem chi tiết lịch" trên dashboard
+            document.querySelectorAll('.switch-to-calendar').forEach(link => {
+                link.addEventListener('click', function(event) {
+                    event.preventDefault();
+                    switchSection('detailed_schedule_section'); // Chuyển sang tab lịch học
+                });
+            });
+
+
+            // Logic xử lý Lịch học
             const calendarDisplay = document.getElementById('calendar-display');
             const eventDetailModal = document.getElementById('event-detail-modal');
             const closeModalButton = document.getElementById('close-modal-button');
@@ -337,154 +364,160 @@
             const quickNoteArea = document.getElementById('quick-note-area');
             const fullNotesLink = document.getElementById('full-notes-link');
             
-            let calendarEvents = [];
+            let calendarEvents = []; // Mảng chứa các sự kiện lịch
             try {
+                // Lấy dữ liệu lịch từ thẻ script đã nhúng
                 const calendarDataElement = document.getElementById('calendar-data');
                 if (calendarDataElement) {
                     calendarEvents = JSON.parse(calendarDataElement.textContent || '[]');
                 }
             } catch (e) {
-                console.error("Error parsing calendar data:", e);
-                calendarEvents = [];
+                console.error("Lỗi khi phân tích dữ liệu lịch:", e);
             }
 
+            // Hàm render (hiển thị) các chế độ xem lịch
             function renderCalendarView(viewType) {
-                calendarDisplay.innerHTML = ''; // Xóa nội dung cũ
+                calendarDisplay.innerHTML = ''; // Xóa nội dung lịch cũ
                 if (!calendarEvents || calendarEvents.length === 0) {
                     calendarDisplay.innerHTML = '<p class="text-gray-500 col-span-full text-center py-10">Không có sự kiện lịch nào.</p>';
                     return;
                 }
 
-                let eventsToShow = calendarEvents; // Mặc định hiển thị tất cả (giống view tháng)
-                // Lọc sự kiện theo viewType (đơn giản hóa)
-                // Cần logic phức tạp hơn cho view tuần và ngày thực tế
+                let eventsToShow = calendarEvents; // Mặc định hiển thị tất cả (cho view tháng)
                 const today = new Date();
-                if (viewType === 'day') {
+                today.setHours(0,0,0,0); // Chuẩn hóa ngày hôm nay về đầu ngày
+
+                if (viewType === 'day') { // Lọc sự kiện cho ngày hiện tại
                     eventsToShow = calendarEvents.filter(event => {
-                        const eventDate = new Date(event.date + 'T00:00:00'); // Đảm bảo so sánh ngày chính xác
+                        // Đảm bảo so sánh ngày chính xác, có thể cần điều chỉnh timezone nếu dữ liệu server khác client
+                        const eventDate = new Date(event.date + 'T00:00:00Z'); 
                         return eventDate.toDateString() === today.toDateString();
                     });
                      if (eventsToShow.length === 0) calendarDisplay.innerHTML = `<p class="text-gray-500 col-span-full text-center py-10">Không có sự kiện nào cho hôm nay (${today.toLocaleDateString('vi-VN')}).</p>`;
-                } else if (viewType === 'week') {
-                    // Lấy sự kiện trong tuần hiện tại (ví dụ đơn giản)
-                    const startOfWeek = new Date(today.setDate(today.getDate() - today.getDay()));
-                    const endOfWeek = new Date(today.setDate(today.getDate() - today.getDay() + 6));
+                } else if (viewType === 'week') { // Lọc sự kiện cho tuần hiện tại
+                    const currentDay = today.getDay(); // 0 (Chủ Nhật) - 6 (Thứ Bảy)
+                    const firstDayOfWeek = new Date(today);
+                    // Điều chỉnh để tuần bắt đầu từ Thứ Hai (hoặc Chủ Nhật tùy theo logic)
+                    firstDayOfWeek.setDate(today.getDate() - currentDay + (currentDay === 0 ? -6 : 1)); 
+                    firstDayOfWeek.setHours(0,0,0,0);
+
+                    const lastDayOfWeek = new Date(firstDayOfWeek);
+                    lastDayOfWeek.setDate(firstDayOfWeek.getDate() + 6);
+                    lastDayOfWeek.setHours(23,59,59,999);
+                    
                     eventsToShow = calendarEvents.filter(event => {
-                        const eventDate = new Date(event.date + 'T00:00:00');
-                        return eventDate >= startOfWeek && eventDate <= endOfWeek;
+                        const eventDate = new Date(event.date + 'T00:00:00Z');
+                        return eventDate >= firstDayOfWeek && eventDate <= lastDayOfWeek;
                     });
                     if (eventsToShow.length === 0) calendarDisplay.innerHTML = `<p class="text-gray-500 col-span-full text-center py-10">Không có sự kiện nào cho tuần này.</p>`;
                 }
-                // View 'month' sẽ hiển thị tất cả các sự kiện mẫu
-
+                
+                // Hiển thị các sự kiện đã lọc
                 if(eventsToShow.length > 0) {
+                    // Sắp xếp sự kiện theo ngày và giờ bắt đầu
                     eventsToShow.sort((a, b) => new Date(a.date + 'T' + a.start_time) - new Date(b.date + 'T' + b.start_time));
-
                     eventsToShow.forEach(event => {
                         const eventElement = document.createElement('div');
                         eventElement.className = 'calendar-event-item';
                         eventElement.innerHTML = `
                             <strong>${event.title}</strong>
-                            <span>${event.date}</span>
+                            <span>${new Date(event.date + 'T00:00:00Z').toLocaleDateString('vi-VN')}</span>
                             <span>${event.start_time} - ${event.end_time}</span>
                         `;
+                        // Gán sự kiện click để hiển thị chi tiết sự kiện
                         eventElement.addEventListener('click', () => showEventDetail(event));
                         calendarDisplay.appendChild(eventElement);
                     });
-                } else if (viewType !== 'day' && viewType !== 'week') { // Nếu là month view và không có event nào
+                } else if (viewType !== 'day' && viewType !== 'week' && calendarEvents.length > 0) { 
                      calendarDisplay.innerHTML = '<p class="text-gray-500 col-span-full text-center py-10">Không có sự kiện lịch nào trong tháng này (dữ liệu mẫu).</p>';
+                } else if (calendarEvents.length === 0 && (viewType === 'day' || viewType === 'week' || viewType === 'month')) {
+                     // Xử lý trường hợp không có sự kiện nào cả và người dùng chọn một view cụ thể
                 }
             }
 
+            // Hàm cập nhật trạng thái active cho các nút chuyển view lịch
             function updateCalendarViewButtons(activeView) {
-                document.getElementById('view-month').classList.toggle('bg-blue-500', activeView === 'month');
-                document.getElementById('view-month').classList.toggle('text-white', activeView === 'month');
-                document.getElementById('view-month').classList.toggle('bg-gray-200', activeView !== 'month');
-                document.getElementById('view-month').classList.toggle('text-gray-700', activeView !== 'month');
-
-                document.getElementById('view-week').classList.toggle('bg-blue-500', activeView === 'week');
-                document.getElementById('view-week').classList.toggle('text-white', activeView === 'week');
-                document.getElementById('view-week').classList.toggle('bg-gray-200', activeView !== 'week');
-                document.getElementById('view-week').classList.toggle('text-gray-700', activeView !== 'week');
-
-                document.getElementById('view-day').classList.toggle('bg-blue-500', activeView === 'day');
-                document.getElementById('view-day').classList.toggle('text-white', activeView === 'day');
-                document.getElementById('view-day').classList.toggle('bg-gray-200', activeView !== 'day');
-                document.getElementById('view-day').classList.toggle('text-gray-700', activeView !== 'day');
+                ['month', 'week', 'day'].forEach(view => {
+                    const button = document.getElementById(`view-${view}`);
+                    if (button) {
+                        button.classList.toggle('bg-blue-500', activeView === view);
+                        button.classList.toggle('text-white', activeView === view);
+                        button.classList.toggle('bg-gray-200', activeView !== view);
+                        button.classList.toggle('text-gray-700', activeView !== view);
+                    }
+                });
             }
 
-            document.getElementById('view-month').addEventListener('click', () => {
+            // Gán sự kiện cho các nút chuyển view lịch
+            document.getElementById('view-month')?.addEventListener('click', () => {
                 renderCalendarView('month');
                 updateCalendarViewButtons('month');
             });
-            document.getElementById('view-week').addEventListener('click', () => {
+            document.getElementById('view-week')?.addEventListener('click', () => {
                 renderCalendarView('week');
                 updateCalendarViewButtons('week');
             });
-            document.getElementById('view-day').addEventListener('click', () => {
+            document.getElementById('view-day')?.addEventListener('click', () => {
                 renderCalendarView('day');
                 updateCalendarViewButtons('day');
             });
 
+            // Hàm hiển thị chi tiết sự kiện trong modal
             async function showEventDetail(event) {
-                modalTitle.textContent = `Chi tiết: ${event.title} (${event.date})`;
-                
-                // Placeholder cho tài liệu
-                materialContent.innerHTML = `<p class="text-gray-500">Đang tải tài liệu cho ${event.title} ngày ${event.date}...</p>`;
-                // Fetch tài liệu (giả lập)
+                modalTitle.textContent = `Chi tiết: ${event.title} (${new Date(event.date + 'T00:00:00Z').toLocaleDateString('vi-VN')})`;
+                materialContent.innerHTML = `<p class="text-gray-500">Đang tải tài liệu...</p>`; // Thông báo đang tải
                 try {
-                    const response = await fetch(`/materials/${event.course_id}/${event.date}`);
+                    // Gọi API (giả lập) để lấy tài liệu
+                    const response = await fetch(`/student/materials/${event.course_id}/${event.date}`);
                     if (response.ok) {
                         const data = await response.json();
                         if (data.materials && data.materials.length > 0) {
-                            materialContent.innerHTML = data.materials.map(m => `<p class="p-2 bg-white border rounded-md">${m}</p>`).join('');
+                            materialContent.innerHTML = data.materials.map(m => `<p class="p-2 bg-white border rounded-md shadow-sm">${m}</p>`).join('');
                         } else {
                             materialContent.innerHTML = '<p class="text-gray-600">Không có tài liệu nào cho buổi học này.</p>';
                         }
                     } else {
-                         materialContent.innerHTML = '<p class="text-red-500">Lỗi khi tải tài liệu.</p>';
+                         materialContent.innerHTML = '<p class="text-red-500">Lỗi khi tải tài liệu. Mã lỗi: ' + response.status + '</p>';
                     }
                 } catch (error) {
-                    console.error("Error fetching materials:", error);
+                    console.error("Lỗi khi lấy tài liệu:", error);
                     materialContent.innerHTML = '<p class="text-red-500">Lỗi kết nối khi tải tài liệu.</p>';
                 }
 
-                quickNoteArea.value = ''; // Xóa ghi chú nhanh cũ
-                // Lưu trữ event id hiện tại để dùng khi lưu note
-                quickNoteArea.dataset.eventId = event.id; 
-                fullNotesLink.href = event.notes_link || '#'; // Cập nhật link ghi chú đầy đủ
+                // Tải ghi chú nhanh từ localStorage (nếu có)
+                quickNoteArea.value = localStorage.getItem(`quickNote_${event.id}`) || '';
+                quickNoteArea.dataset.eventId = event.id; // Lưu event ID để dùng khi lưu ghi chú
+                fullNotesLink.href = event.notes_link || '#'; // Cập nhật link đến trang ghi chú đầy đủ
 
-                eventDetailModal.style.display = 'block';
+                eventDetailModal.style.display = 'block'; // Hiển thị modal
             }
 
-            closeModalButton.addEventListener('click', () => {
+            // Gán sự kiện cho nút đóng modal
+            closeModalButton?.addEventListener('click', () => {
                 eventDetailModal.style.display = 'none';
             });
 
+            // Đóng modal khi click ra ngoài nội dung modal
             window.addEventListener('click', (event) => {
                 if (event.target == eventDetailModal) {
                     eventDetailModal.style.display = 'none';
                 }
             });
             
-            // Lưu ghi chú nhanh (placeholder)
-            document.getElementById('save-quick-note').addEventListener('click', () => {
+            // Gán sự kiện cho nút lưu ghi chú nhanh
+            document.getElementById('save-quick-note')?.addEventListener('click', () => {
                 const noteText = quickNoteArea.value;
                 const eventId = quickNoteArea.dataset.eventId;
                 if (noteText.trim() && eventId) {
-                    console.log(`Lưu ghi chú cho event ${eventId}: ${noteText}`);
-                    // Thêm logic lưu vào localStorage hoặc gửi lên server ở đây
-                    alert("Ghi chú nhanh đã được lưu (giả lập)!");
-                } else {
+                    localStorage.setItem(`quickNote_${eventId}`, noteText); // Lưu vào localStorage
+                    alert("Ghi chú nhanh đã được lưu vào trình duyệt!");
+                } else if (!eventId) {
+                     alert("Không thể lưu ghi chú, không tìm thấy ID sự kiện.");
+                }
+                 else {
                     alert("Vui lòng nhập nội dung ghi chú.");
                 }
             });
-
-            // Theme toggle (giữ nguyên)
-            const themeToggle = document.getElementById('theme-toggle');
-            if (themeToggle) {
-                themeToggle.addEventListener('change', function() { /* ... */ });
-            }
         });
     </script>
 </body>
