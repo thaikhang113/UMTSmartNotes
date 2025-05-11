@@ -19,14 +19,14 @@ app.secret_key = os.urandom(24) # Tạo một secret key ngẫu nhiên (Generate
 STUDENT_ACCOUNTS = {
     "khang.2302700102@st.umt.edu.vn": {
         "password": "123",
-        "full_name": "Nguyễn Văn Khang",
+        "full_name": "Cao Thái Khang",
         "major": "Công nghệ thông tin",
         "id_suffix": "2302700102"
     },
-    "minh.2301122334@st.umt.edu.vn": {
+    "ngoc.2302700024@st.umt.edu.vn": {
         "password": "123",
-        "full_name": "Trần Thị Minh",
-        "major": "Quản trị Kinh doanh",
+        "full_name": "Trần Bích Ngọc",
+        "major": "Truyền thông đa phương tiện",
         "id_suffix": "2301122334"
     },
     "lan.2305566778@st.umt.edu.vn": {
