@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ context_title if context_title else "Xem Flashcards" }}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/heroicons/2.0.18/24/outline/heroicons.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .flashcard-viewer-container {
+            max-width: 600px; /* Giới hạn chiều rộng của khu vực xem */
+            margin: 2rem auto; /* Căn giữa */
+        }
+        .flashcard-display {
+            width: 100%;
+            height: 300px; /* Chiều cao cố định cho flashcard */
+            border: 2px solid #60a5fa; /* blue-400 */
+            border-radius: 0.75rem; /* rounded-xl */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 1.5rem;
+            cursor: pointer;
+            background-color: #f0f9ff; /* blue-50 */
+            position: relative;
+            perspective: 1000px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .flashcard-display-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            transition: transform 0.6s;
+            transform-style: preserve-3d;
+        }
+        .flashcard-display.is-flipped .flashcard-display-inner {
+            transform: rotateY(180deg);
+        }
+        .card-face-view { /* Đổi tên để tránh xung đột với style của trang index */
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 1rem;
+            border-radius: calc(0.75rem - 2px); /* Trừ đi border width */
+            font-size: 1.125rem; /* text-lg */
+            color: #1f2937; /* gray-800 */
+        }
+        .card-front-view {
+            background-color: #f0f9ff; /* blue-50 */
+        }
+        .card-back-view {
+            background-color: #e0e7ff; /* indigo-100 */
+            transform: rotateY(180deg);
+        }
+        .flashcard-navigation button {
+            background-color: #60a5fa; /* blue-400 */
+            color: white;
+        }
+        .flashcard-navigation button:hover {
+            background-color: #3b82f6; /* blue-500 */
+        }
+        .flashcard-navigation button:disabled {
+            background-color: #9ca3af; /* gray-400 */
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <div class="container mx-auto p-6 md:p-8">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 pb-4 border-b border-gray-300">
+            <div>
+                <h1 class="text-2xl md:text-3xl font-bold text-gray-800">
+                    {{ context_title if context_title else "Xem Flashcards" }}
+                </h1>
+                {% if course %}
+                    <p class="text-sm text-gray-500">Môn: {{ course.name }} 
+                    {% if session_event %} | Buổi: {{ session_event.title.split(' - ')[-1] }} ({{ session_event.date | format_date_display }}) {% endif %}
+                    </p>
+                {% endif %}
+            </div>
+            <a href="{{ url_for('student_flashcard_hub') }}" class="mt-4 sm:mt-0 bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg transition-colors flex items-center self-start sm:self-center">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 mr-2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3" /></svg>
+                Quay lại Flashcard Hub
+            </a>
+        </div>
+
+        <div class="flashcard-viewer-container bg-white p-6 rounded-xl shadow-xl">
+            <div id="flashcard-viewer-area" class="flashcard-display mb-6">
+                <div class="flashcard-display-inner">
+                    <div class="card-face-view card-front-view">Nội dung mặt trước</div>
+                    <div class="card-face-view card-back-view">Nội dung mặt sau</div>
+                </div>
+            </div>
+
+            <div class="flex justify-between items-center flashcard-navigation mb-4">
+                <button id="prev-card-btn" class="py-2 px-5 rounded-lg font-medium">&lt; Trước</button>
+                <span id="card-position-info" class="text-sm text-gray-600">0 / 0</span>
+                <button id="next-card-btn" class="py-2 px-5 rounded-lg font-medium">Sau &gt;</button>
+            </div>
+            <button id="delete-this-card-btn" class="w-full bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded-lg transition-colors text-sm">
+                Xóa Flashcard này
+            </button>
+        </div>
+
+        <footer class="text-center mt-12 text-sm text-gray-500">
+            <p>&copy; <span id="current-year-view-fc">2025</span> UMT Learning Assistant.</p>
+        </footer>
+    </div>
+
+    <script>
+        document.getElementById('current-year-view-fc').textContent = new Date().getFullYear();
+
+        const flashcardViewer = document.getElementById('flashcard-viewer-area');
+        const flashcardInnerViewer = flashcardViewer ? flashcardViewer.querySelector('.flashcard-display-inner') : null;
+        const cardFrontViewer = flashcardViewer ? flashcardViewer.querySelector('.card-front-view') : null;
+        const cardBackViewer = flashcardViewer ? flashcardViewer.querySelector('.card-back-view') : null;
+        const prevCardBtn = document.getElementById('prev-card-btn');
+        const nextCardBtn = document.getElementById('next-card-btn');
+        const deleteThisCardBtn = document.getElementById('delete-this-card-btn');
+        const cardPositionInfo = document.getElementById('card-position-info');
+
+        // Nhận storage_key từ Flask
+        const storageKey = "{{ storage_key | e }}";
+        let loadedFlashcards = JSON.parse(localStorage.getItem(storageKey)) || [];
+        let currentCardViewIndex = 0;
+
+        function saveLoadedFlashcards() {
+            localStorage.setItem(storageKey, JSON.stringify(loadedFlashcards));
+        }
+
+        function displayCurrentViewableCard() {
+            if (!flashcardViewer || !cardFrontViewer || !cardBackViewer || !cardPositionInfo || !deleteThisCardBtn || !prevCardBtn || !nextCardBtn) {
+                console.error("Một hoặc nhiều phần tử xem flashcard không tìm thấy.");
+                return;
+            }
+            flashcardViewer.classList.remove('is-flipped'); 
+
+            if (loadedFlashcards.length === 0) {
+                cardFrontViewer.textContent = 'Không có flashcard nào trong bộ này.';
+                cardBackViewer.textContent = '';
+                cardPositionInfo.textContent = '0 / 0';
+                deleteThisCardBtn.style.display = 'none';
+                prevCardBtn.disabled = true;
+                nextCardBtn.disabled = true;
+                return;
+            }
+            deleteThisCardBtn.style.display = 'block';
+            const card = loadedFlashcards[currentCardViewIndex];
+            cardFrontViewer.textContent = card.front;
+            cardBackViewer.textContent = card.back;
+            cardPositionInfo.textContent = `${currentCardViewIndex + 1} / ${loadedFlashcards.length}`;
+            prevCardBtn.disabled = currentCardViewIndex === 0;
+            nextCardBtn.disabled = currentCardViewIndex === loadedFlashcards.length - 1;
+        }
+
+        if (flashcardViewer) {
+            flashcardViewer.addEventListener('click', function() {
+                this.classList.toggle('is-flipped');
+            });
+        }
+
+        prevCardBtn?.addEventListener('click', () => {
+            if (currentCardViewIndex > 0) {
+                currentCardViewIndex--;
+                displayCurrentViewableCard();
+            }
+        });
+
+        nextCardBtn?.addEventListener('click', () => {
+            if (currentCardViewIndex < loadedFlashcards.length - 1) {
+                currentCardViewIndex++;
+                displayCurrentViewableCard();
+            }
+        });
+
+        deleteThisCardBtn?.addEventListener('click', () => {
+            if (loadedFlashcards.length > 0) {
+                if (confirm('Bạn có chắc chắn muốn xóa flashcard này? Hành động này không thể hoàn tác.')) {
+                    loadedFlashcards.splice(currentCardViewIndex, 1);
+                    saveLoadedFlashcards();
+                    if (currentCardViewIndex >= loadedFlashcards.length && loadedFlashcards.length > 0) {
+                        currentCardViewIndex = loadedFlashcards.length - 1;
+                    } else if (loadedFlashcards.length === 0) {
+                        currentCardViewIndex = 0;
+                    }
+                    displayCurrentViewableCard();
+                    alert('Flashcard đã được xóa.');
+                }
+            }
+        });
+
+        // Hiển thị flashcard đầu tiên khi tải trang
+        displayCurrentViewableCard();
+    </script>
+</body>
+</html>

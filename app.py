@@ -103,6 +103,8 @@ def format_date_display_filter(value, format_str='%d/%m/%Y'):
     except (ValueError, TypeError): return value
 
 # --- Routes ---
+# ... (Các routes login, logout, student_dashboard, student_notes, student_materials, faculty_dashboard, faculty_course_sessions, faculty_upload_material, serve_uploaded_file, faculty_manage_quiz, student_take_quiz, student_submit_quiz, student_quiz_results, student_flashcard_hub, student_create_flashcard_general, student_select_session_for_flashcard, student_create_flashcard_for_session giữ nguyên) ...
+
 @app.route('/', methods=['GET', 'POST']) 
 def login():
     # ... (logic giữ nguyên) ...
@@ -142,14 +144,12 @@ def login():
 
 @app.route('/logout') 
 def logout():
-    # ... (logic giữ nguyên) ...
     session.clear()
     flash('Bạn đã đăng xuất.', 'info')
     return redirect(url_for('login'))
 
 @app.route('/student/dashboard') 
 def student_dashboard():
-    # ... (logic giữ nguyên) ...
     if not session.get('logged_in') or session.get('role') != 'student':
         flash('Vui lòng đăng nhập với tư cách sinh viên.', 'warning')
         return redirect(url_for('login'))
@@ -193,7 +193,7 @@ def student_dashboard():
                            available_quizzes=available_quizzes_for_review, 
                            quizzes_data_for_js=quizzes_data) 
 
-@app.route('/student/notes/<course_id>/<date_str>') # ... (logic giữ nguyên) ...
+@app.route('/student/notes/<course_id>/<date_str>') 
 def student_session_note(course_id, date_str):
     if not session.get('logged_in') or session.get('role') != 'student':
         flash('Vui lòng đăng nhập với tư cách sinh viên.', 'warning')
@@ -215,7 +215,7 @@ def student_session_note(course_id, date_str):
                            user=user_display_info, material_url=material_url_for_session,
                            quiz_id=quiz_id_for_session, quizzes_data_for_js=quizzes_data)
 
-@app.route('/student/notes/<course_id>') # ... (logic giữ nguyên) ...
+@app.route('/student/notes/<course_id>') 
 def student_course_notes_overview(course_id):
     if not session.get('logged_in') or session.get('role') != 'student':
         flash('Vui lòng đăng nhập với tư cách sinh viên.', 'warning')
@@ -237,7 +237,7 @@ def student_course_notes_overview(course_id):
                            sessions=course_sessions_for_display, user=user_display_info,
                            quizzes_data=quizzes_data) 
 
-@app.route('/student/materials/<course_id>/<event_date>') # ... (logic giữ nguyên) ...
+@app.route('/student/materials/<course_id>/<event_date>') 
 def get_student_materials(course_id, event_date):
     if not session.get('logged_in') or session.get('role') != 'student':
         return {"error": "Unauthorized"}, 401
@@ -258,8 +258,9 @@ def get_student_materials(course_id, event_date):
         materials.append(f"Slide {course['name']} - Buổi {event_date}.pdf (Chưa có)")
     return {"course_name": course['name'], "event_date": event_date, "materials": materials}
 
-@app.route('/faculty/dashboard') # ... (logic giữ nguyên) ...
+@app.route('/faculty/dashboard') 
 def faculty_dashboard():
+    # ... (logic giữ nguyên) ...
     if not session.get('logged_in') or session.get('role') != 'faculty':
         flash('Vui lòng đăng nhập với tư cách giảng viên.', 'warning')
         return redirect(url_for('login'))
@@ -274,8 +275,9 @@ def faculty_dashboard():
                            faculty_courses=faculty_display_courses, 
                            teaching_schedule=teaching_schedule_sample) 
 
-@app.route('/faculty/course_sessions/<course_id>') # ... (logic giữ nguyên) ...
+@app.route('/faculty/course_sessions/<course_id>') 
 def faculty_course_sessions(course_id):
+    # ... (logic giữ nguyên) ...
     if not session.get('logged_in') or session.get('role') != 'faculty':
         flash('Vui lòng đăng nhập.', 'warning')
         return redirect(url_for('login'))
@@ -298,8 +300,9 @@ def faculty_course_sessions(course_id):
                            quizzes_data=quizzes_data, 
                            faculty_user={"name": session.get('full_name')})
 
-@app.route('/faculty/upload_material/<course_id>/<date_str>', methods=['GET', 'POST']) # ... (logic giữ nguyên) ...
+@app.route('/faculty/upload_material/<course_id>/<date_str>', methods=['GET', 'POST']) 
 def faculty_upload_material(course_id, date_str):
+    # ... (logic giữ nguyên) ...
     if not session.get('logged_in') or session.get('role') != 'faculty':
         flash('Vui lòng đăng nhập.', 'warning')
         return redirect(url_for('login'))
@@ -348,8 +351,9 @@ def faculty_upload_material(course_id, date_str):
                            session_event=session_event_to_update, 
                            faculty_user={"name": session.get('full_name')})
 
-@app.route('/uploads/<path:filename>') # ... (giữ nguyên) ...
+@app.route('/uploads/<path:filename>') 
 def serve_uploaded_file(filename):
+    # ... (logic giữ nguyên) ...
     if not session.get('logged_in'): 
         flash('Vui lòng đăng nhập để xem tài liệu.', 'warning')
         return redirect(url_for('login'))
@@ -359,8 +363,9 @@ def serve_uploaded_file(filename):
         flash('Không tìm thấy tài liệu.', 'danger')
         return "File not found", 404
 
-@app.route('/faculty/manage_quiz/<course_id>/<date_str>', methods=['GET', 'POST']) # ... (giữ nguyên) ...
+@app.route('/faculty/manage_quiz/<course_id>/<date_str>', methods=['GET', 'POST']) 
 def faculty_manage_quiz(course_id, date_str):
+    # ... (logic giữ nguyên) ...
     if not session.get('logged_in') or session.get('role') != 'faculty':
         flash('Vui lòng đăng nhập.', 'warning')
         return redirect(url_for('login'))
@@ -422,8 +427,9 @@ def faculty_manage_quiz(course_id, date_str):
                            quiz=current_quiz,
                            faculty_user={"name": session.get('full_name')})
 
-@app.route('/student/take_quiz/<quiz_id>') # ... (giữ nguyên) ...
+@app.route('/student/take_quiz/<quiz_id>') 
 def student_take_quiz(quiz_id):
+    # ... (logic giữ nguyên) ...
     if not session.get('logged_in') or session.get('role') != 'student':
         flash('Vui lòng đăng nhập để làm quiz.', 'warning')
         return redirect(url_for('login'))
@@ -448,8 +454,9 @@ def student_take_quiz(quiz_id):
                            session_title=related_session.get('title') if related_session else "Quiz",
                            user={"name": session.get('full_name')})
 
-@app.route('/student/submit_quiz/<quiz_id>', methods=['POST']) # ... (giữ nguyên) ...
+@app.route('/student/submit_quiz/<quiz_id>', methods=['POST']) 
 def student_submit_quiz(quiz_id):
+    # ... (logic giữ nguyên) ...
     if not session.get('logged_in') or session.get('role') != 'student':
         flash('Vui lòng đăng nhập.', 'warning')
         return redirect(url_for('login'))
@@ -488,8 +495,9 @@ def student_submit_quiz(quiz_id):
     flash(f'Bạn đã hoàn thành quiz! Điểm của bạn: {score}/{total_questions}', 'success')
     return redirect(url_for('student_quiz_results', quiz_id=quiz_id))
 
-@app.route('/student/quiz_results/<quiz_id>') # ... (giữ nguyên) ...
+@app.route('/student/quiz_results/<quiz_id>') 
 def student_quiz_results(quiz_id):
+    # ... (logic giữ nguyên) ...
     if not session.get('logged_in') or session.get('role') != 'student':
         flash('Vui lòng đăng nhập.', 'warning')
         return redirect(url_for('login'))
@@ -516,34 +524,113 @@ def student_flashcard_hub():
     
     student_courses_for_flashcards = []
     current_student_username = session.get('username')
-    if current_student_username == "khang.2302700102@st.umt.edu.vn": # Chỉ lấy môn của Khang
+    if current_student_username == "khang.2302700102@st.umt.edu.vn": 
         student_courses_ids = set(evt['course_id'] for evt in raw_student_calendar_events_sample)
         student_courses_for_flashcards = [course for course in student_courses_sample if course['id'] in student_courses_ids]
-    # else: # Xử lý cho các sinh viên khác nếu cần
-        # student_courses_for_flashcards = student_courses_sample # Hoặc danh sách môn họ đăng ký
 
     return render_template('student_flashcard_hub.html', 
                            user={"name": session.get('full_name')},
                            courses=student_courses_for_flashcards)
 
-# CÁC ROUTE PLACEHOLDER CHO FLASHCARD (SẼ ĐƯỢC TRIỂN KHAI SAU)
-@app.route('/student/flashcards/create/general')
+# ROUTE ĐỂ TẠO FLASHCARD CHUNG
+@app.route('/student/flashcards/create/general', methods=['GET', 'POST'])
 def student_create_flashcard_general():
-    # Sẽ render template tạo flashcard chung
-    flash('Chức năng Tạo Flashcard Chung đang được phát triển.', 'info')
-    return redirect(url_for('student_flashcard_hub'))
+    if not session.get('logged_in') or session.get('role') != 'student':
+        flash('Vui lòng đăng nhập.', 'warning')
+        return redirect(url_for('login'))
+    # Logic POST để lưu flashcard chung sẽ được thêm ở đây (nếu cần xử lý phía server)
+    # Hiện tại, việc lưu đang được xử lý bằng JavaScript trong template
+    return render_template('student_create_flashcard.html', 
+                           user={"name": session.get('full_name')},
+                           context_title="Tạo Flashcard Chung",
+                           course=None, session_event=None,
+                           storage_key='flashcards_umt_general') # Truyền storage_key
 
+# ROUTE ĐỂ CHỌN BUỔI HỌC CHO FLASHCARD (TẠO HOẶC XEM)
+@app.route('/student/flashcards/select_session/<course_id>/<action_type>') 
+def student_select_session_for_flashcard(course_id, action_type):
+    if not session.get('logged_in') or session.get('role') != 'student':
+        flash('Vui lòng đăng nhập.', 'warning')
+        return redirect(url_for('login'))
+    
+    course = next((c for c in student_courses_sample if c["id"] == course_id), None)
+    if not course:
+        flash('Không tìm thấy môn học.', 'danger')
+        return redirect(url_for('student_flashcard_hub'))
+
+    current_student_username = session.get('username')
+    course_sessions_for_display = []
+    if current_student_username == "khang.2302700102@st.umt.edu.vn": 
+        course_sessions_for_display = [
+            evt for evt in raw_student_calendar_events_sample if evt['course_id'] == course_id
+        ]
+        course_sessions_for_display.sort(key=lambda x: datetime.datetime.strptime(x['date'], '%Y-%m-%d'))
+    
+    return render_template('student_select_session.html',
+                           user={"name": session.get('full_name')},
+                           course=course,
+                           sessions=course_sessions_for_display,
+                           action_type=action_type) 
+
+# ROUTE ĐỂ TẠO FLASHCARD CHO BUỔI HỌC CỤ THỂ
+@app.route('/student/flashcards/create/session/<course_id>/<date_str>', methods=['GET', 'POST'])
+def student_create_flashcard_for_session(course_id, date_str):
+    if not session.get('logged_in') or session.get('role') != 'student':
+        flash('Vui lòng đăng nhập.', 'warning')
+        return redirect(url_for('login'))
+
+    course = next((c for c in student_courses_sample if c["id"] == course_id), None)
+    session_event = next((evt for evt in raw_student_calendar_events_sample if evt['course_id'] == course_id and evt['date'] == date_str), None)
+
+    if not course or not session_event:
+        flash('Không tìm thấy môn học hoặc buổi học.', 'danger')
+        return redirect(url_for('student_flashcard_hub'))
+    
+    storage_key = f"flashcards_umt_{course_id}_{date_str}"
+    context_title=f"Tạo Flashcard cho: {course['name']} - Buổi {session_event['title'].split(' - ')[-1]} ({date_str})"
+    
+    return render_template('student_create_flashcard.html',
+                           user={"name": session.get('full_name')},
+                           context_title=context_title,
+                           course=course,
+                           session_event=session_event,
+                           storage_key=storage_key) # Truyền storage_key
+
+# ROUTE ĐỂ XEM FLASHCARD CHUNG
 @app.route('/student/flashcards/view/general')
 def student_view_flashcard_general():
-    # Sẽ render template xem flashcard chung
-    flash('Chức năng Xem Flashcard Chung đang được phát triển.', 'info')
-    return redirect(url_for('student_flashcard_hub'))
+    if not session.get('logged_in') or session.get('role') != 'student':
+        flash('Vui lòng đăng nhập.', 'warning')
+        return redirect(url_for('login'))
+    return render_template('student_view_flashcards.html',
+                           user={"name": session.get('full_name')},
+                           context_title="Xem Flashcard Chung",
+                           storage_key='flashcards_umt_general', # Khóa cho flashcard chung
+                           course=None, session_event=None)
 
-@app.route('/student/flashcards/select_session/<course_id>/<action_type>') # action_type là 'create' hoặc 'view'
-def student_select_session_for_flashcard(course_id, action_type):
-    # Sẽ render template liệt kê các buổi học của môn để chọn tạo/xem flashcard
-    flash(f'Chức năng chọn buổi học cho flashcard ({action_type}) của môn {course_id} đang được phát triển.', 'info')
-    return redirect(url_for('student_flashcard_hub'))
+# ROUTE ĐỂ XEM FLASHCARD CHO BUỔI HỌC CỤ THỂ
+@app.route('/student/flashcards/view/session/<course_id>/<date_str>')
+def student_view_flashcard_for_session(course_id, date_str):
+    if not session.get('logged_in') or session.get('role') != 'student':
+        flash('Vui lòng đăng nhập.', 'warning')
+        return redirect(url_for('login'))
+
+    course = next((c for c in student_courses_sample if c["id"] == course_id), None)
+    session_event = next((evt for evt in raw_student_calendar_events_sample if evt['course_id'] == course_id and evt['date'] == date_str), None)
+
+    if not course or not session_event:
+        flash('Không tìm thấy môn học hoặc buổi học.', 'danger')
+        return redirect(url_for('student_flashcard_hub'))
+    
+    storage_key = f"flashcards_umt_{course_id}_{date_str}"
+    context_title=f"Xem Flashcard: {course['name']} - Buổi {session_event['title'].split(' - ')[-1]} ({date_str})"
+
+    return render_template('student_view_flashcards.html',
+                           user={"name": session.get('full_name')},
+                           context_title=context_title,
+                           storage_key=storage_key, # Khóa cho flashcard của buổi học
+                           course=course,
+                           session_event=session_event)
 
 
 if __name__ == '__main__':
