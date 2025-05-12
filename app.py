@@ -153,9 +153,10 @@ def student_dashboard():
         return redirect(url_for('login'))
     
     processed_student_calendar_events = []
-    available_quizzes_for_review = [] # Danh sách quiz cho mục ôn tập
+    available_quizzes_for_review = [] 
     current_student_username = session.get('username')
 
+    # Chỉ áp dụng lịch và quiz chi tiết cho Khang
     if current_student_username == "khang.2302700102@st.umt.edu.vn":
         for event_data in raw_student_calendar_events_sample:
             event = event_data.copy()
@@ -163,12 +164,9 @@ def student_dashboard():
             event['quiz_id_for_template'] = event_data.get('quiz_id') 
             processed_student_calendar_events.append(event)
 
-            # Thêm quiz vào danh sách ôn tập nếu có
             if event.get('quiz_id') and event['quiz_id'] in quizzes_data:
                 quiz_info = quizzes_data[event['quiz_id']]
                 course_info = next((c for c in student_courses_sample if c["id"] == event.get("course_id")), None)
-                # Tránh thêm quiz trùng lặp nếu một quiz được dùng cho nhiều buổi (hiếm)
-                # Avoid duplicate quizzes if one quiz is used for multiple sessions (rare)
                 if not any(q['quiz_id'] == event['quiz_id'] for q in available_quizzes_for_review):
                     available_quizzes_for_review.append({
                         "quiz_id": event['quiz_id'],
@@ -176,13 +174,9 @@ def student_dashboard():
                         "course_name": course_info.get("name", event.get("course_id")) if course_info else event.get("course_id"),
                         "session_date_str": event.get("date") 
                     })
-    
-    # Sắp xếp quiz theo ngày buổi học (tùy chọn)
-    # Sort quizzes by session date (optional)
-    available_quizzes_for_review.sort(key=lambda q: datetime.datetime.strptime(q['session_date_str'], '%Y-%m-%d'), reverse=True)
+        available_quizzes_for_review.sort(key=lambda q: datetime.datetime.strptime(q['session_date_str'], '%Y-%m-%d'), reverse=True)
 
-
-    upcoming_reviews = [{"subject": "Nhập môn Lập trình", "topic": "Biến và kiểu dữ liệu", "due_date": "Ngày mai"}] # Giữ lại spaced repetition
+    upcoming_reviews = [{"subject": "Nhập môn Lập trình", "topic": "Biến và kiểu dữ liệu", "due_date": "Ngày mai"}]
     current_display_date = datetime.date.today() 
     upcoming_events_dashboard = sorted(
         [event for event in processed_student_calendar_events if datetime.datetime.strptime(event['date'], '%Y-%m-%d').date() >= current_display_date],
@@ -195,19 +189,21 @@ def student_dashboard():
         student_courses_ids = set(evt['course_id'] for evt in raw_student_calendar_events_sample)
         display_courses = [course for course in student_courses_sample if course['id'] in student_courses_ids]
     else:
+        # Sinh viên khác có thể không thấy môn nào hoặc thấy tất cả môn mẫu
         display_courses = [course for course in student_courses_sample if course['id'] not in ["CS101", "MA101"]] 
+
 
     return render_template('index.html', user=user_display_info, courses=display_courses,
                            reviews=upcoming_reviews, 
-                           calendar_events=processed_student_calendar_events,
+                           calendar_events=processed_student_calendar_events, # Dùng cho lịch
                            upcoming_events_dashboard=upcoming_events_dashboard,
-                           available_quizzes=available_quizzes_for_review, # TRUYỀN DANH SÁCH QUIZ
-                           quizzes_data_for_js=quizzes_data) # Truyền quizzes_data cho JS trên lịch
+                           available_quizzes=available_quizzes_for_review, # Dùng cho danh sách quiz trong "Ôn tập"
+                           quizzes_data_for_js=quizzes_data) # Dùng cho JS hiển thị link quiz trên lịch
 
 
 @app.route('/student/notes/<course_id>/<date_str>') 
 def student_session_note(course_id, date_str):
-    # ... (logic giữ nguyên, đã có truyền quiz_id) ...
+    # ... (logic giữ nguyên) ...
     if not session.get('logged_in') or session.get('role') != 'student':
         flash('Vui lòng đăng nhập với tư cách sinh viên.', 'warning')
         return redirect(url_for('login'))
@@ -231,7 +227,7 @@ def student_session_note(course_id, date_str):
 
 @app.route('/student/notes/<course_id>') 
 def student_course_notes_overview(course_id):
-    # ... (logic giữ nguyên, đã có truyền quizzes_data) ...
+    # ... (logic giữ nguyên) ...
     if not session.get('logged_in') or session.get('role') != 'student':
         flash('Vui lòng đăng nhập với tư cách sinh viên.', 'warning')
         return redirect(url_for('login'))
@@ -250,7 +246,7 @@ def student_course_notes_overview(course_id):
     user_display_info = { "name": session.get('full_name') }
     return render_template('course_notes_overview.html', course=course, 
                            sessions=course_sessions_for_display, user=user_display_info,
-                           quizzes_data=quizzes_data) # Truyền quizzes_data
+                           quizzes_data=quizzes_data) 
 
 
 @app.route('/student/materials/<course_id>/<event_date>') # ... (giữ nguyên) ...
@@ -290,7 +286,7 @@ def faculty_dashboard():
                            faculty_courses=faculty_display_courses, 
                            teaching_schedule=teaching_schedule_sample) 
 
-@app.route('/faculty/course_sessions/<course_id>') # ... (giữ nguyên, đã có truyền quizzes_data) ...
+@app.route('/faculty/course_sessions/<course_id>') # ... (giữ nguyên) ...
 def faculty_course_sessions(course_id):
     if not session.get('logged_in') or session.get('role') != 'faculty':
         flash('Vui lòng đăng nhập.', 'warning')
