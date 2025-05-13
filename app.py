@@ -4,26 +4,28 @@ import os
 import datetime
 import mysql.connector # Import MySQL connector
 from mysql.connector import Error # Import Error for exception handling
+from functools import wraps # Make sure to import wraps
+import json # For handling JSON data with quizzes
 
 app = Flask(__name__)
-app.secret_key = 'your_very_secret_key_here' # Change this in a real application!
+app.secret_key = 'your_very_secret_key_here_CHANGE_ME' # Rất quan trọng: Thay đổi key này!
 UPLOAD_FOLDER = 'uploads'
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16 MB max upload size
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # Giới hạn tải lên 16 MB
 
-# Ensure the upload folder exists
+# Đảm bảo thư mục upload tồn tại
 if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
 
-# --- Database Configuration ---
+# --- Cấu hình Cơ sở dữ liệu ---
 DB_HOST = "localhost"
 DB_USER = "root"
-DB_PASSWORD = "Khag12344@" # Your provided password
+DB_PASSWORD = "Khag12344@" # Mật khẩu của bạn
 DB_NAME = "umtsmartnotes"
 
-# --- Database Helper Functions ---
+# --- Hàm trợ giúp Cơ sở dữ liệu ---
 def get_db_connection():
-    """Establishes a connection to the MySQL database."""
+    """Thiết lập kết nối đến cơ sở dữ liệu MySQL."""
     try:
         conn = mysql.connector.connect(
             host=DB_HOST,
@@ -33,187 +35,75 @@ def get_db_connection():
         )
         return conn
     except Error as e:
-        app.logger.error(f"Error connecting to MySQL database: {e}")
-        flash(f"Database connection error: {e}", "danger")
+        app.logger.error(f"Lỗi kết nối đến MySQL: {e}")
+        flash(f"Lỗi kết nối cơ sở dữ liệu. Vui lòng thử lại sau.", "danger")
         return None
 
-# --- Example Table Schemas (CREATE THESE IN YOUR MYSQL DATABASE) ---
-# CREATE TABLE users (
-#     id INT AUTO_INCREMENT PRIMARY KEY,
-#     username VARCHAR(255) UNIQUE NOT NULL,
-#     password VARCHAR(255) NOT NULL, -- Store hashed passwords in production!
-#     role VARCHAR(50) NOT NULL, -- 'student' or 'faculty'
-#     full_name VARCHAR(255)
-# );
-
-# CREATE TABLE courses (
-#     id INT AUTO_INCREMENT PRIMARY KEY,
-#     course_code VARCHAR(50) UNIQUE NOT NULL,
-#     course_name VARCHAR(255) NOT NULL,
-#     faculty_id INT,
-#     FOREIGN KEY (faculty_id) REFERENCES users(id) ON DELETE SET NULL -- Assuming faculty is a user
-# );
-
-# CREATE TABLE enrollments (
-#    student_id INT NOT NULL,
-#    course_id INT NOT NULL,
-#    PRIMARY KEY (student_id, course_id),
-#    FOREIGN KEY (student_id) REFERENCES users(id) ON DELETE CASCADE,
-#    FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE
-# );
-
-# CREATE TABLE course_sessions (
-#     id INT AUTO_INCREMENT PRIMARY KEY,
-#     course_id INT NOT NULL,
-#     session_title VARCHAR(255) NOT NULL,
-#     session_date DATE,
-#     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-#     FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE
-# );
-
-# CREATE TABLE notes (
-#     id INT AUTO_INCREMENT PRIMARY KEY,
-#     session_id INT, -- Can be NULL if note is not tied to a specific session
-#     user_id INT NOT NULL,
-#     title VARCHAR(255),
-#     content TEXT,
-#     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-#     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-#     FOREIGN KEY (session_id) REFERENCES course_sessions(id) ON DELETE SET NULL,
-#     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-# );
-
-# CREATE TABLE flashcard_hubs (
-#    id INT AUTO_INCREMENT PRIMARY KEY,
-#    user_id INT NOT NULL,
-#    course_id INT NOT NULL, -- Or associate with a session_id or make it more general
-#    name VARCHAR(255) NOT NULL,
-#    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-#    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-#    FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE -- Example association
-# );
-
-# CREATE TABLE flashcards (
-#    id INT AUTO_INCREMENT PRIMARY KEY,
-#    hub_id INT NOT NULL,
-#    question TEXT NOT NULL,
-#    answer TEXT NOT NULL,
-#    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-#    FOREIGN KEY (hub_id) REFERENCES flashcard_hubs(id) ON DELETE CASCADE
-# );
-
-# CREATE TABLE quizzes (
-#    id INT AUTO_INCREMENT PRIMARY KEY,
-#    course_id INT NOT NULL,
-#    session_id INT, -- Optional: link quiz to a specific session
-#    title VARCHAR(255) NOT NULL,
-#    created_by INT NOT NULL, -- faculty user_id
-#    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-#    FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE,
-#    FOREIGN KEY (session_id) REFERENCES course_sessions(id) ON DELETE SET NULL,
-#    FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE CASCADE
-# );
-
-# CREATE TABLE questions (
-#    id INT AUTO_INCREMENT PRIMARY KEY,
-#    quiz_id INT NOT NULL,
-#    question_text TEXT NOT NULL,
-#    question_type VARCHAR(50) NOT NULL, -- 'multiple_choice', 'true_false', 'short_answer'
-#    -- For multiple choice, store options as JSON or in a separate options table
-#    options JSON, -- Example: '["Option A", "Option B", "Option C"]'
-#    correct_answer TEXT NOT NULL, -- For MC, could be the index or text of the correct option
-#    FOREIGN KEY (quiz_id) REFERENCES quizzes(id) ON DELETE CASCADE
-# );
-
-# CREATE TABLE quiz_attempts (
-#    id INT AUTO_INCREMENT PRIMARY KEY,
-#    quiz_id INT NOT NULL,
-#    student_id INT NOT NULL,
-#    score DECIMAL(5,2), -- Example: 85.50
-#    attempted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-#    FOREIGN KEY (quiz_id) REFERENCES quizzes(id) ON DELETE CASCADE,
-#    FOREIGN KEY (student_id) REFERENCES users(id) ON DELETE CASCADE
-# );
-
-# CREATE TABLE attempt_answers (
-#    id INT AUTO_INCREMENT PRIMARY KEY,
-#    attempt_id INT NOT NULL,
-#    question_id INT NOT NULL,
-#    student_answer TEXT,
-#    is_correct BOOLEAN,
-#    FOREIGN KEY (attempt_id) REFERENCES quiz_attempts(id) ON DELETE CASCADE,
-#    FOREIGN KEY (question_id) REFERENCES questions(id) ON DELETE CASCADE
-# );
-
-# CREATE TABLE session_materials (
-#    id INT AUTO_INCREMENT PRIMARY KEY,
-#    session_id INT NOT NULL,
-#    file_name VARCHAR(255) NOT NULL,
-#    file_path VARCHAR(512) NOT NULL,
-#    uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-#    uploaded_by INT NOT NULL, -- user_id of faculty
-#    FOREIGN KEY (session_id) REFERENCES course_sessions(id) ON DELETE CASCADE,
-#    FOREIGN KEY (uploaded_by) REFERENCES users(id) ON DELETE CASCADE
-# );
-# --- End Example Table Schemas ---
-
-
-# --- User Authentication and Management ---
+# --- Lớp User và các hàm quản lý session ---
 class User:
-    """Represents a user, mirroring Flask-Login's UserMixin for session management."""
+    """Đại diện cho một người dùng."""
     def __init__(self, id, username, role, full_name=None):
         self.id = id
         self.username = username
         self.role = role
         self.full_name = full_name
-        self.is_active = True  # Assuming all users fetched are active
+        self.is_active = True 
 
     def get_id(self):
         return str(self.id)
 
     @property
     def is_authenticated(self):
-        return True # If a User object exists, they are considered authenticated for this session
+        return True
 
     @property
     def is_anonymous(self):
         return False
 
-# Mocking Flask-Login's current_user and login_required
 def login_user_session(user):
-    """Stores user information in the session."""
+    """Lưu thông tin người dùng vào session."""
     session['user_id'] = user.id
     session['username'] = user.username
     session['role'] = user.role
     session['full_name'] = user.full_name
 
 def logout_user_session():
-    """Clears user information from the session."""
+    """Xóa thông tin người dùng khỏi session."""
     session.pop('user_id', None)
     session.pop('username', None)
     session.pop('role', None)
     session.pop('full_name', None)
 
-def get_current_user():
-    """Retrieves the current user from the session if logged in."""
-    if 'user_id' in session:
-        # In a real app, you might re-fetch from DB to ensure data is fresh,
-        # but for simplicity, we'll use session data.
+@app.context_processor
+def inject_user():
+    """
+    Cung cấp biến current_user cho tất cả các template.
+    QUAN TRỌNG: Trong các template HTML, hãy sử dụng {{ current_user }} thay vì {{ user }}.
+    """
+    if 'user_id' in session and 'username' in session and 'role' in session:
+        return {'current_user': User(session['user_id'], session['username'], session['role'], session.get('full_name'))}
+    return {'current_user': None}
+
+
+def get_current_user_object():
+    """Lấy đối tượng User hiện tại từ session nếu đã đăng nhập."""
+    # Hàm này được sử dụng nội bộ trong Python, template sẽ dùng current_user từ context_processor
+    if 'user_id' in session and 'username' in session and 'role' in session:
         return User(session['user_id'], session['username'], session['role'], session.get('full_name'))
     return None
 
+
 def login_required(role=None):
-    """Decorator to protect routes that require login."""
+    """Decorator để bảo vệ các route yêu cầu đăng nhập."""
     def decorator(f):
-        @wraps(f) # Important for preserving function metadata
+        @wraps(f)
         def decorated_function(*args, **kwargs):
-            current_user = get_current_user()
+            current_user = get_current_user_object() # Sử dụng hàm mới để lấy object User
             if not current_user:
                 flash("Vui lòng đăng nhập để truy cập trang này.", "warning")
                 return redirect(url_for('login', next=request.url))
             if role and current_user.role != role:
                 flash(f"Bạn không có quyền truy cập vào trang này. Cần vai trò: {role}.", "danger")
-                # Redirect to appropriate dashboard based on user's actual role
                 if current_user.role == 'student':
                     return redirect(url_for('student_dashboard'))
                 elif current_user.role == 'faculty':
@@ -224,32 +114,54 @@ def login_required(role=None):
         return decorated_function
     return decorator
 
-from functools import wraps # Make sure to import wraps
+# --- Custom Template Filter ---
+@app.template_filter('format_date_display')
+def format_date_display_filter(value, format_str='%d/%m/%Y'):
+    """Định dạng chuỗi ngày tháng để hiển thị."""
+    if not value:
+        return ""
+    try:
+        date_obj = datetime.datetime.strptime(str(value), '%Y-%m-%d')
+        return date_obj.strftime(format_str)
+    except (ValueError, TypeError):
+        app.logger.warning(f"Không thể định dạng ngày: {value}")
+        try: # Thử định dạng nếu value đã là đối tượng date/datetime
+            return value.strftime(format_str)
+        except AttributeError:
+             return str(value)
 
+
+# --- Routes ---
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-    """Handles user login."""
+    """Xử lý đăng nhập người dùng."""
+    current_user = get_current_user_object()
+    if current_user:
+        if current_user.role == 'student':
+            return redirect(url_for('student_dashboard'))
+        elif current_user.role == 'faculty':
+            return redirect(url_for('faculty_dashboard'))
+
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
-        role = request.form['role'] # 'student' or 'faculty'
+        role = request.form['role'] 
 
         conn = get_db_connection()
         if not conn:
-            return render_template('login.html', error="Lỗi kết nối cơ sở dữ liệu.")
+            return render_template('login.html') 
 
         cursor = None
         try:
-            cursor = conn.cursor(dictionary=True) # dictionary=True to get results as dicts
-            # IMPORTANT: Store and check HASHED passwords in a real application!
-            # Example: SELECT id, username, password_hash, role, full_name FROM users WHERE username = %s AND role = %s
+            cursor = conn.cursor(dictionary=True)
+            # QUAN TRỌNG: Trong ứng dụng thực tế, hãy lưu trữ và kiểm tra mật khẩu đã HASH!
             query = "SELECT id, username, password, role, full_name FROM users WHERE username = %s AND role = %s"
             cursor.execute(query, (username, role))
             user_data = cursor.fetchone()
 
-            if user_data and user_data['password'] == password: # Replace with password hash check
+            if user_data and user_data['password'] == password: # Thay thế bằng kiểm tra hash mật khẩu
                 user_obj = User(user_data['id'], user_data['username'], user_data['role'], user_data.get('full_name'))
-                login_user_session(user_obj) # Use custom session login
+                login_user_session(user_obj)
                 flash('Đăng nhập thành công!', 'success')
                 if role == 'student':
                     return redirect(url_for('student_dashboard'))
@@ -258,90 +170,62 @@ def login():
             else:
                 flash('Tên đăng nhập, mật khẩu hoặc vai trò không đúng.', 'danger')
         except Error as e:
-            app.logger.error(f"Database query error during login: {e}")
-            flash(f"Lỗi truy vấn cơ sở dữ liệu: {e}", "danger")
+            app.logger.error(f"Lỗi truy vấn CSDL khi đăng nhập: {e}")
+            flash(f"Lỗi truy vấn cơ sở dữ liệu khi đăng nhập.", "danger")
         finally:
-            if cursor:
-                cursor.close()
-            if conn and conn.is_connected():
-                conn.close()
+            if cursor: cursor.close()
+            if conn and conn.is_connected(): conn.close()
         
     return render_template('login.html')
 
 @app.route('/logout')
+@login_required() # Đảm bảo chỉ người đã đăng nhập mới logout được
 def logout():
-    """Handles user logout."""
-    logout_user_session() # Use custom session logout
+    """Xử lý đăng xuất người dùng."""
+    logout_user_session()
     flash('Bạn đã đăng xuất.', 'info')
     return redirect(url_for('login'))
-
-def get_user_by_id(user_id):
-    """Fetches a user by their ID from the database."""
-    conn = get_db_connection()
-    if not conn:
-        return None
-    cursor = None
-    try:
-        cursor = conn.cursor(dictionary=True)
-        cursor.execute("SELECT id, username, role, full_name FROM users WHERE id = %s", (user_id,))
-        user_data = cursor.fetchone()
-        if user_data:
-            return User(user_data['id'], user_data['username'], user_data['role'], user_data.get('full_name'))
-        return None
-    except Error as e:
-        app.logger.error(f"Error fetching user by ID {user_id}: {e}")
-        return None
-    finally:
-        if cursor:
-            cursor.close()
-        if conn and conn.is_connected():
-            conn.close()
 
 # --- Student Routes ---
 @app.route('/student/dashboard')
 @login_required(role='student')
 def student_dashboard():
-    """Displays the student dashboard."""
-    current_user = get_current_user()
+    """Hiển thị dashboard của sinh viên."""
+    # current_user đã có sẵn trong template nhờ context_processor
     conn = get_db_connection()
     if not conn:
-        flash("Lỗi kết nối cơ sở dữ liệu.", "danger")
-        return redirect(url_for('login'))
+        return redirect(url_for('login')) 
 
     student_courses = []
+    current_user_obj = get_current_user_object() # Lấy object User để dùng ID
     cursor = None
     try:
         cursor = conn.cursor(dictionary=True)
-        # Query to get courses the student is enrolled in
-        # Assumes an 'enrollments' table: enrollments(student_id, course_id)
         query = """
-            SELECT c.id, c.course_code, c.course_name
+            SELECT c.id, c.course_code, c.course_name, c.credits
             FROM courses c
             JOIN enrollments e ON c.id = e.course_id
             WHERE e.student_id = %s
         """
-        cursor.execute(query, (current_user.id,))
+        cursor.execute(query, (current_user_obj.id,))
         student_courses = cursor.fetchall()
     except Error as e:
-        app.logger.error(f"Error fetching student courses for user {current_user.id}: {e}")
-        flash("Không thể tải danh sách khóa học.", "danger")
+        app.logger.error(f"Lỗi lấy danh sách khóa học của sinh viên {current_user_obj.id}: {e}")
+        flash("Không thể tải danh sách khóa học của bạn.", "danger")
     finally:
-        if cursor:
-            cursor.close()
-        if conn and conn.is_connected():
-            conn.close()
+        if cursor: cursor.close()
+        if conn and conn.is_connected(): conn.close()
             
-    return render_template('student_dashboard.html', current_user=current_user, courses=student_courses)
+    return render_template('index.html', courses=student_courses) # current_user đã có sẵn
 
 
 @app.route('/student/select_session/<int:course_id>')
 @login_required(role='student')
 def student_select_session(course_id):
-    """Allows a student to select a session for a course."""
-    current_user = get_current_user()
+    """Cho phép sinh viên chọn một buổi học của khóa học."""
+    current_user_obj = get_current_user_object()
     conn = get_db_connection()
     if not conn:
-        flash("Lỗi kết nối cơ sở dữ liệu.", "danger")
         return redirect(url_for('student_dashboard'))
 
     course = None
@@ -349,7 +233,6 @@ def student_select_session(course_id):
     cursor = None
     try:
         cursor = conn.cursor(dictionary=True)
-        # Get course details
         cursor.execute("SELECT id, course_code, course_name FROM courses WHERE id = %s", (course_id,))
         course = cursor.fetchone()
 
@@ -357,122 +240,145 @@ def student_select_session(course_id):
             flash("Khóa học không tồn tại.", "danger")
             return redirect(url_for('student_dashboard'))
 
-        # Get sessions for the course
-        cursor.execute("SELECT id, session_title, session_date FROM course_sessions WHERE course_id = %s ORDER BY session_date DESC, id DESC", (course_id,))
+        cursor.execute("SELECT * FROM enrollments WHERE student_id = %s AND course_id = %s", (current_user_obj.id, course_id))
+        if not cursor.fetchone():
+            flash("Bạn chưa ghi danh vào khóa học này.", "warning")
+            return redirect(url_for('student_dashboard'))
+
+        cursor.execute("""
+            SELECT id, session_title, session_date, start_time, end_time, lecturer_name, location, event_type 
+            FROM course_sessions 
+            WHERE course_id = %s 
+            ORDER BY session_date DESC, start_time DESC, id DESC
+        """, (course_id,))
         sessions = cursor.fetchall()
 
     except Error as e:
-        app.logger.error(f"Error fetching sessions for course {course_id}: {e}")
+        app.logger.error(f"Lỗi lấy danh sách buổi học cho khóa {course_id}: {e}")
         flash("Không thể tải danh sách buổi học.", "danger")
     finally:
-        if cursor:
-            cursor.close()
-        if conn and conn.is_connected():
-            conn.close()
+        if cursor: cursor.close()
+        if conn and conn.is_connected(): conn.close()
 
-    return render_template('student_select_session.html', current_user=current_user, course=course, sessions=sessions)
+    return render_template('student_select_session.html', course=course, sessions=sessions) # current_user đã có sẵn
 
 # --- Faculty Routes ---
 @app.route('/faculty/dashboard')
 @login_required(role='faculty')
 def faculty_dashboard():
-    """Displays the faculty dashboard."""
-    current_user = get_current_user()
+    """Hiển thị dashboard của giảng viên."""
+    current_user_obj = get_current_user_object()
     conn = get_db_connection()
     if not conn:
-        flash("Lỗi kết nối cơ sở dữ liệu.", "danger")
         return redirect(url_for('login'))
 
     faculty_courses = []
     cursor = None
     try:
         cursor = conn.cursor(dictionary=True)
-        # Get courses managed by this faculty member
-        query = "SELECT id, course_code, course_name FROM courses WHERE faculty_id = %s"
-        cursor.execute(query, (current_user.id,))
+        # Lấy các khóa học mà giảng viên này là người phụ trách chính
+        query = "SELECT id, course_code, course_name, credits FROM courses WHERE faculty_id = %s" 
+        cursor.execute(query, (current_user_obj.id,))
         faculty_courses = cursor.fetchall()
+        
     except Error as e:
-        app.logger.error(f"Error fetching faculty courses for user {current_user.id}: {e}")
+        app.logger.error(f"Lỗi lấy danh sách khóa học của giảng viên {current_user_obj.id}: {e}")
         flash("Không thể tải danh sách khóa học.", "danger")
     finally:
-        if cursor:
-            cursor.close()
-        if conn and conn.is_connected():
-            conn.close()
+        if cursor: cursor.close()
+        if conn and conn.is_connected(): conn.close()
             
-    return render_template('faculty_dashboard.html', current_user=current_user, courses=faculty_courses)
+    return render_template('faculty_dashboard.html', courses=faculty_courses) # current_user đã có sẵn
 
 
 @app.route('/faculty/course_sessions/<int:course_id>', methods=['GET', 'POST'])
 @login_required(role='faculty')
 def faculty_course_sessions(course_id):
-    """Manages course sessions for a faculty member."""
-    current_user = get_current_user()
+    """Quản lý các buổi học của khóa học cho giảng viên."""
+    current_user_obj = get_current_user_object()
     conn = get_db_connection()
     if not conn:
-        flash("Lỗi kết nối cơ sở dữ liệu.", "danger")
         return redirect(url_for('faculty_dashboard'))
 
     course = None
     sessions = []
-    cursor = None # Define cursor outside try block
+    cursor = None
 
     try:
         cursor = conn.cursor(dictionary=True)
-        # Verify faculty owns this course
-        cursor.execute("SELECT id, course_code, course_name FROM courses WHERE id = %s AND faculty_id = %s", (course_id, current_user.id))
+        # Xác thực giảng viên có quyền quản lý khóa học này
+        cursor.execute("SELECT id, course_code, course_name FROM courses WHERE id = %s AND faculty_id = %s", (course_id, current_user_obj.id))
         course = cursor.fetchone()
 
-        if not course:
-            flash("Khóa học không hợp lệ hoặc bạn không có quyền truy cập.", "danger")
-            return redirect(url_for('faculty_dashboard'))
+        if not course: # Nếu không phải GV chính, kiểm tra xem có phải GV dạy buổi nào trong khóa không
+            cursor.execute("""
+                SELECT DISTINCT c.id, c.course_code, c.course_name FROM courses c
+                JOIN course_sessions cs ON c.id = cs.course_id
+                WHERE c.id = %s AND cs.lecturer_name = %s LIMIT 1 
+            """, (course_id, current_user_obj.full_name)) 
+            course_as_lecturer = cursor.fetchone()
+            if not course_as_lecturer:
+                flash("Khóa học không hợp lệ hoặc bạn không có quyền quản lý buổi học cho khóa này.", "danger")
+                return redirect(url_for('faculty_dashboard'))
+            course = course_as_lecturer # Cho phép quản lý nếu là GV của ít nhất 1 buổi
+
 
         if request.method == 'POST':
             session_title = request.form.get('session_title')
             session_date_str = request.form.get('session_date')
+            start_time_str = request.form.get('start_time')
+            end_time_str = request.form.get('end_time')
+            lecturer_name = request.form.get('lecturer_name', current_user_obj.full_name) 
+            location = request.form.get('location')
+            event_type = request.form.get('event_type')
             
-            if not session_title or not session_date_str:
-                flash("Tiêu đề buổi học và ngày là bắt buộc.", "warning")
+            if not all([session_title, session_date_str, start_time_str, end_time_str, lecturer_name, location, event_type]):
+                flash("Vui lòng điền đầy đủ thông tin cho buổi học.", "warning")
             else:
                 try:
                     session_date = datetime.datetime.strptime(session_date_str, '%Y-%m-%d').date()
-                    insert_query = "INSERT INTO course_sessions (course_id, session_title, session_date) VALUES (%s, %s, %s)"
-                    cursor.execute(insert_query, (course_id, session_title, session_date))
+                    start_time = datetime.datetime.strptime(start_time_str, '%H:%M').time()
+                    end_time = datetime.datetime.strptime(end_time_str, '%H:%M').time()
+
+                    insert_query = """INSERT INTO course_sessions 
+                                      (course_id, session_title, session_date, start_time, end_time, lecturer_name, location, event_type) 
+                                      VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"""
+                    cursor.execute(insert_query, (course_id, session_title, session_date, start_time, end_time, lecturer_name, location, event_type))
                     conn.commit()
                     flash("Buổi học đã được tạo thành công!", "success")
                 except ValueError:
-                    flash("Định dạng ngày không hợp lệ. Vui lòng sử dụng YYYY-MM-DD.", "danger")
+                    flash("Định dạng ngày hoặc giờ không hợp lệ. Vui lòng sử dụng YYYY-MM-DD cho ngày và HH:MM cho giờ.", "danger")
                 except Error as e:
-                    app.logger.error(f"Error creating session for course {course_id}: {e}")
+                    app.logger.error(f"Lỗi tạo buổi học cho khóa {course_id}: {e}")
                     flash(f"Lỗi khi tạo buổi học: {e}", "danger")
-                    conn.rollback() # Rollback on error
-            return redirect(url_for('faculty_course_sessions', course_id=course_id)) # Redirect to refresh
+                    if conn.is_connected(): conn.rollback()
+            return redirect(url_for('faculty_course_sessions', course_id=course_id))
 
-        # Get existing sessions for the course
-        cursor.execute("SELECT id, session_title, session_date FROM course_sessions WHERE course_id = %s ORDER BY session_date DESC, id DESC", (course_id,))
+        cursor.execute("""
+            SELECT id, session_title, session_date, start_time, end_time, lecturer_name, location, event_type 
+            FROM course_sessions 
+            WHERE course_id = %s 
+            ORDER BY session_date DESC, start_time DESC, id DESC
+        """, (course_id,))
         sessions = cursor.fetchall()
 
     except Error as e:
-        app.logger.error(f"Database error in faculty_course_sessions for course {course_id}: {e}")
+        app.logger.error(f"Lỗi CSDL trong faculty_course_sessions cho khóa {course_id}: {e}")
         flash(f"Lỗi cơ sở dữ liệu: {e}", "danger")
     finally:
-        if cursor:
-            cursor.close()
-        if conn and conn.is_connected():
-            conn.close()
+        if cursor: cursor.close()
+        if conn and conn.is_connected(): conn.close()
             
-    return render_template('faculty_course_sessions.html', current_user=current_user, course=course, sessions=sessions)
+    return render_template('faculty_course_sessions.html', course=course, sessions=sessions) # current_user đã có sẵn
 
 
 @app.route('/faculty/upload_material/<int:session_id>', methods=['GET', 'POST'])
 @login_required(role='faculty')
 def faculty_upload_material(session_id):
-    """Handles material uploads for a specific session by faculty."""
-    current_user = get_current_user()
+    current_user_obj = get_current_user_object()
     conn = get_db_connection()
     if not conn:
-        flash("Lỗi kết nối cơ sở dữ liệu.", "danger")
-        return redirect(url_for('faculty_dashboard')) # Or a more relevant page
+        return redirect(url_for('faculty_dashboard'))
 
     session_details = None
     materials = []
@@ -480,19 +386,25 @@ def faculty_upload_material(session_id):
 
     try:
         cursor = conn.cursor(dictionary=True)
-        # Get session details and verify faculty ownership through course
         query_session = """
-            SELECT cs.id, cs.session_title, cs.course_id, c.faculty_id
+            SELECT cs.id, cs.session_title, cs.course_id, c.faculty_id, cs.lecturer_name
             FROM course_sessions cs
             JOIN courses c ON cs.course_id = c.id
-            WHERE cs.id = %s AND c.faculty_id = %s
+            WHERE cs.id = %s
         """
-        cursor.execute(query_session, (session_id, current_user.id))
+        cursor.execute(query_session, (session_id,))
         session_details = cursor.fetchone()
 
         if not session_details:
-            flash("Buổi học không tồn tại hoặc bạn không có quyền tải lên tài liệu cho buổi học này.", "danger")
-            return redirect(url_for('faculty_dashboard')) # Or faculty_course_sessions if course_id is known
+            flash("Buổi học không tồn tại.", "danger")
+            return redirect(url_for('faculty_dashboard'))
+        
+        is_main_faculty = (session_details['faculty_id'] == current_user_obj.id)
+        is_session_lecturer = (session_details['lecturer_name'] == current_user_obj.full_name) 
+
+        if not (is_main_faculty or is_session_lecturer):
+            flash("Bạn không có quyền tải lên tài liệu cho buổi học này.", "danger")
+            return redirect(url_for('faculty_course_sessions', course_id=session_details['course_id']))
 
         if request.method == 'POST':
             if 'material_file' not in request.files:
@@ -504,139 +416,119 @@ def faculty_upload_material(session_id):
                 flash('Không có tệp nào được chọn.', 'warning')
                 return redirect(request.url)
 
-            if file: # Add allowed_file check if needed
+            if file: 
                 filename = secure_filename(file.filename)
-                # Create a unique path for the file to avoid overwrites and organize by session
-                session_upload_path = os.path.join(app.config['UPLOAD_FOLDER'], 'session_materials', str(session_id))
-                if not os.path.exists(session_upload_path):
-                    os.makedirs(session_upload_path)
+                session_upload_folder = os.path.join(app.config['UPLOAD_FOLDER'], 'session_materials', str(session_id))
+                if not os.path.exists(session_upload_folder):
+                    os.makedirs(session_upload_folder)
                 
-                file_path = os.path.join(session_upload_path, filename)
+                file_path_on_server = os.path.join(session_upload_folder, filename)
                 
-                # Check if file with the same name already exists in this session's material list
                 cursor.execute("SELECT id FROM session_materials WHERE session_id = %s AND file_name = %s", (session_id, filename))
                 if cursor.fetchone():
                     flash(f"Tệp '{filename}' đã tồn tại cho buổi học này. Vui lòng đổi tên tệp hoặc xóa tệp cũ.", "warning")
                 else:
                     try:
-                        file.save(file_path)
-                        # Save file metadata to database
+                        file.save(file_path_on_server)
+                        db_file_path = os.path.join('session_materials', str(session_id), filename).replace("\\","/") 
                         insert_query = """
                             INSERT INTO session_materials (session_id, file_name, file_path, uploaded_by)
                             VALUES (%s, %s, %s, %s)
                         """
-                        # Store relative path for flexibility if UPLOAD_FOLDER moves
-                        relative_file_path = os.path.join('session_materials', str(session_id), filename)
-                        cursor.execute(insert_query, (session_id, filename, relative_file_path, current_user.id))
+                        cursor.execute(insert_query, (session_id, filename, db_file_path, current_user_obj.id))
                         conn.commit()
                         flash(f"Tệp '{filename}' đã được tải lên thành công.", 'success')
                     except Error as e:
-                        app.logger.error(f"DB Error saving material for session {session_id}: {e}")
-                        flash(f"Lỗi khi lưu thông tin tệp vào cơ sở dữ liệu: {e}", "danger")
-                        conn.rollback()
-                    except Exception as e: # Catch other potential errors like file system issues
-                        app.logger.error(f"File save error for session {session_id}, file {filename}: {e}")
+                        app.logger.error(f"Lỗi CSDL khi lưu tài liệu cho buổi {session_id}: {e}")
+                        flash(f"Lỗi khi lưu thông tin tệp vào cơ sở dữ liệu.", "danger")
+                        if conn.is_connected(): conn.rollback()
+                    except Exception as e:
+                        app.logger.error(f"Lỗi lưu file cho buổi {session_id}, file {filename}: {e}")
                         flash(f"Lỗi khi lưu tệp: {e}", "danger")
-
                 return redirect(url_for('faculty_upload_material', session_id=session_id))
 
-        # Get existing materials for the session
         cursor.execute("SELECT id, file_name, uploaded_at FROM session_materials WHERE session_id = %s ORDER BY uploaded_at DESC", (session_id,))
         materials = cursor.fetchall()
 
     except Error as e:
-        app.logger.error(f"Database error in faculty_upload_material for session {session_id}: {e}")
+        app.logger.error(f"Lỗi CSDL trong faculty_upload_material cho buổi {session_id}: {e}")
         flash(f"Lỗi cơ sở dữ liệu: {e}", "danger")
     finally:
-        if cursor:
-            cursor.close()
-        if conn and conn.is_connected():
-            conn.close()
+        if cursor: cursor.close()
+        if conn and conn.is_connected(): conn.close()
             
-    return render_template('faculty_upload_material.html', current_user=current_user, session=session_details, materials=materials)
+    return render_template('faculty_upload_material.html', session=session_details, materials=materials) # current_user đã có sẵn
 
 
 @app.route('/download_material/<int:material_id>')
-@login_required() # Accessible by both students and faculty if they have access to the session
+@login_required() 
 def download_material(material_id):
-    """Allows downloading of a specific material."""
-    current_user = get_current_user()
+    current_user_obj = get_current_user_object()
     conn = get_db_connection()
     if not conn:
-        flash("Lỗi kết nối cơ sở dữ liệu.", "danger")
-        return redirect(request.referrer or url_for('login')) # Go back or to login
+        return redirect(request.referrer or url_for('login'))
 
     cursor = None
     try:
         cursor = conn.cursor(dictionary=True)
-        # Fetch material details
-        query = "SELECT file_name, file_path, session_id FROM session_materials WHERE id = %s"
+        query = """SELECT sm.file_name, sm.file_path, sm.session_id, 
+                          cs.course_id, c.faculty_id as course_faculty_id, 
+                          cs.lecturer_name as session_lecturer_name, sm.uploaded_by
+                   FROM session_materials sm 
+                   JOIN course_sessions cs ON sm.session_id = cs.id 
+                   JOIN courses c ON cs.course_id = c.id 
+                   WHERE sm.id = %s"""
         cursor.execute(query, (material_id,))
         material = cursor.fetchone()
 
         if not material:
             flash("Tài liệu không tồn tại.", "danger")
-            return redirect(request.referrer or url_for('student_dashboard' if current_user.role == 'student' else 'faculty_dashboard'))
+            return redirect(request.referrer or url_for('student_dashboard' if current_user_obj.role == 'student' else 'faculty_dashboard'))
 
-        # Security check: Ensure the current user (student or faculty) has access to the course/session of this material.
-        # This is a simplified check. A more robust check would verify enrollment or teaching status for the course.
-        session_access_query = """
-            SELECT cs.id FROM course_sessions cs
-            JOIN courses c ON cs.course_id = c.id
-            LEFT JOIN enrollments e ON c.id = e.course_id AND e.student_id = %s
-            WHERE cs.id = %s AND (c.faculty_id = %s OR e.student_id = %s)
-        """
-        cursor.execute(session_access_query, (current_user.id, material['session_id'], current_user.id, current_user.id))
-        if not cursor.fetchone() and current_user.role != 'faculty': # Faculty might have broader access if they uploaded it
-             # Re-check if faculty is the one who uploaded it or manages the course
-            cursor.execute("""
-                SELECT sm.id FROM session_materials sm
-                JOIN course_sessions cs ON sm.session_id = cs.id
-                JOIN courses c ON cs.course_id = c.id
-                WHERE sm.id = %s AND (sm.uploaded_by = %s OR c.faculty_id = %s)
-            """, (material_id, current_user.id, current_user.id))
-            if not cursor.fetchone():
-                flash("Bạn không có quyền tải xuống tài liệu này.", "danger")
-                return redirect(request.referrer or url_for('student_dashboard' if current_user.role == 'student' else 'faculty_dashboard'))
-
-        # Construct the full path from the UPLOAD_FOLDER and the stored relative file_path
-        # Ensure material['file_path'] is the relative path like 'session_materials/session_id/filename.pdf'
-        full_file_path = os.path.join(app.config['UPLOAD_FOLDER'], material['file_path'])
-        directory = os.path.dirname(full_file_path)
-        filename = os.path.basename(full_file_path)
+        can_download = False
+        if current_user_obj.role == 'faculty':
+            if material['course_faculty_id'] == current_user_obj.id or \
+               material['session_lecturer_name'] == current_user_obj.full_name or \
+               material['uploaded_by'] == current_user_obj.id:
+                 can_download = True
+        elif current_user_obj.role == 'student':
+            cursor.execute("SELECT student_id FROM enrollments WHERE student_id = %s AND course_id = %s", (current_user_obj.id, material['course_id']))
+            if cursor.fetchone():
+                can_download = True
         
-        if not os.path.exists(full_file_path):
-            app.logger.error(f"Material file not found at path: {full_file_path} for material_id: {material_id}")
-            flash("Tệp tài liệu không tìm thấy trên máy chủ.", "danger")
-            return redirect(request.referrer or url_for('student_dashboard' if current_user.role == 'student' else 'faculty_dashboard'))
+        if not can_download:
+            flash("Bạn không có quyền tải xuống tài liệu này.", "danger")
+            return redirect(request.referrer or url_for('student_dashboard' if current_user_obj.role == 'student' else 'faculty_dashboard'))
+        
+        full_path_to_file = os.path.join(app.config['UPLOAD_FOLDER'], material['file_path'])
+        directory_for_send = os.path.dirname(full_path_to_file)
+        filename_for_send = os.path.basename(full_path_to_file)
 
-        return send_from_directory(directory=directory, path=filename, as_attachment=True)
+        if not os.path.exists(full_path_to_file):
+            app.logger.error(f"Tệp tài liệu không tìm thấy tại: {full_path_to_file} cho material_id: {material_id}")
+            flash("Tệp tài liệu không tìm thấy trên máy chủ.", "danger")
+            return redirect(request.referrer or url_for('student_dashboard' if current_user_obj.role == 'student' else 'faculty_dashboard'))
+
+        return send_from_directory(directory=directory_for_send, path=filename_for_send, as_attachment=True)
 
     except Error as e:
-        app.logger.error(f"Database error downloading material {material_id}: {e}")
-        flash(f"Lỗi cơ sở dữ liệu khi tải tài liệu: {e}", "danger")
+        app.logger.error(f"Lỗi CSDL khi tải tài liệu {material_id}: {e}")
+        flash(f"Lỗi cơ sở dữ liệu khi tải tài liệu.", "danger")
     except Exception as e:
-        app.logger.error(f"General error downloading material {material_id}: {e}")
-        flash(f"Lỗi không xác định khi tải tài liệu: {e}", "danger")
+        app.logger.error(f"Lỗi chung khi tải tài liệu {material_id}: {e}")
+        flash(f"Lỗi không xác định khi tải tài liệu.", "danger")
     finally:
-        if cursor:
-            cursor.close()
-        if conn and conn.is_connected():
-            conn.close()
-    
-    # Fallback redirect
-    return redirect(request.referrer or url_for('student_dashboard' if current_user.role == 'student' else 'faculty_dashboard'))
+        if cursor: cursor.close()
+        if conn and conn.is_connected(): conn.close()
+    return redirect(request.referrer or url_for('student_dashboard' if current_user_obj.role == 'student' else 'faculty_dashboard'))
 
-
-# --- Notes Routes (Example - Needs to be fully converted) ---
+# --- Notes Routes ---
 @app.route('/notes/session/<int:session_id>')
-@login_required() # Accessible by student or faculty if they have access to session
+@login_required()
 def course_notes_overview(session_id):
-    """Displays notes for a specific session."""
-    current_user = get_current_user()
+    current_user_obj = get_current_user_object()
     conn = get_db_connection()
     if not conn:
-        flash("Lỗi kết nối cơ sở dữ liệu.", "danger")
         return redirect(url_for('login'))
 
     session_info = None
@@ -644,9 +536,8 @@ def course_notes_overview(session_id):
     cursor = None
     try:
         cursor = conn.cursor(dictionary=True)
-        # Get session details and course name
         query_session = """
-            SELECT cs.id, cs.session_title, cs.course_id, c.course_name, c.course_code
+            SELECT cs.id, cs.session_title, cs.course_id, c.course_name, c.course_code, c.faculty_id as course_faculty_id, cs.lecturer_name as session_lecturer_name
             FROM course_sessions cs
             JOIN courses c ON cs.course_id = c.id
             WHERE cs.id = %s
@@ -656,47 +547,49 @@ def course_notes_overview(session_id):
 
         if not session_info:
             flash("Buổi học không tồn tại.", "danger")
-            return redirect(url_for('student_dashboard') if current_user.role == 'student' else url_for('faculty_dashboard'))
+            return redirect(url_for('student_dashboard') if current_user_obj.role == 'student' else url_for('faculty_dashboard'))
         
-        # Security: Check if user has access to this session's course
-        # (Simplified: assumes if they can reach this, they have access, or add specific enrollment/faculty check)
+        can_view_session = False
+        if current_user_obj.role == 'student':
+            cursor.execute("SELECT * FROM enrollments WHERE student_id = %s AND course_id = %s", (current_user_obj.id, session_info['course_id']))
+            if cursor.fetchone():
+                can_view_session = True
+        elif current_user_obj.role == 'faculty':
+            if session_info['course_faculty_id'] == current_user_obj.id or session_info['session_lecturer_name'] == current_user_obj.full_name:
+                can_view_session = True
+        
+        if not can_view_session:
+            flash("Bạn không có quyền xem ghi chú cho buổi học này.", "danger")
+            return redirect(url_for('student_dashboard') if current_user_obj.role == 'student' else url_for('faculty_dashboard'))
 
-        # Get notes for this session created by the current user
-        # Or, if faculty, maybe show all notes for the session? (Adjust logic as needed)
-        # For now, only user's own notes for the session
         notes_query = "SELECT id, title, LEFT(content, 100) as preview, updated_at FROM notes WHERE session_id = %s AND user_id = %s ORDER BY updated_at DESC"
-        cursor.execute(notes_query, (session_id, current_user.id))
+        cursor.execute(notes_query, (session_id, current_user_obj.id))
         notes_list = cursor.fetchall()
 
     except Error as e:
-        app.logger.error(f"Error fetching notes for session {session_id}, user {current_user.id}: {e}")
+        app.logger.error(f"Lỗi lấy ghi chú cho buổi {session_id}, người dùng {current_user_obj.id}: {e}")
         flash("Không thể tải ghi chú.", "danger")
     finally:
-        if cursor:
-            cursor.close()
-        if conn and conn.is_connected():
-            conn.close()
+        if cursor: cursor.close()
+        if conn and conn.is_connected(): conn.close()
             
-    return render_template('course_notes_overview.html', current_user=current_user, session_info=session_info, notes=notes_list)
+    return render_template('course_notes_overview.html', session_info=session_info, notes=notes_list) # current_user đã có sẵn
 
 
 @app.route('/notes/create/<int:session_id>', methods=['GET', 'POST'])
 @login_required()
 def create_note(session_id):
-    """Creates a new note for a session."""
-    current_user = get_current_user()
+    current_user_obj = get_current_user_object()
     conn = get_db_connection()
     if not conn:
-        flash("Lỗi kết nối cơ sở dữ liệu.", "danger")
-        return redirect(url_for('course_notes_overview', session_id=session_id)) # Or appropriate redirect
+        return redirect(url_for('course_notes_overview', session_id=session_id)) 
 
     session_info = None
     cursor = None
     try:
         cursor = conn.cursor(dictionary=True)
-        # Fetch session info to display on the page
         query_session = """
-            SELECT cs.id, cs.session_title, c.course_name 
+            SELECT cs.id, cs.session_title, c.course_name, c.id as course_id, c.faculty_id as course_faculty_id, cs.lecturer_name as session_lecturer_name
             FROM course_sessions cs
             JOIN courses c ON cs.course_id = c.id
             WHERE cs.id = %s
@@ -705,74 +598,74 @@ def create_note(session_id):
         session_info = cursor.fetchone()
         if not session_info:
             flash("Buổi học không hợp lệ.", "danger")
-            return redirect(url_for('student_dashboard') if current_user.role == 'student' else url_for('faculty_dashboard'))
+            return redirect(url_for('student_dashboard') if current_user_obj.role == 'student' else url_for('faculty_dashboard'))
+
+        can_create_note = False
+        if current_user_obj.role == 'student':
+            cursor.execute("SELECT * FROM enrollments WHERE student_id = %s AND course_id = %s", (current_user_obj.id, session_info['course_id']))
+            if cursor.fetchone():
+                can_create_note = True
+        elif current_user_obj.role == 'faculty':
+             if session_info['course_faculty_id'] == current_user_obj.id or session_info['session_lecturer_name'] == current_user_obj.full_name:
+                can_create_note = True
+        
+        if not can_create_note:
+            flash("Bạn không có quyền tạo ghi chú cho buổi học này.", "danger")
+            return redirect(url_for('course_notes_overview', session_id=session_id))
+
 
         if request.method == 'POST':
             title = request.form.get('title', 'Ghi chú không tiêu đề')
             content = request.form.get('content', '')
 
             insert_query = "INSERT INTO notes (session_id, user_id, title, content) VALUES (%s, %s, %s, %s)"
-            cursor.execute(insert_query, (session_id, current_user.id, title, content))
+            cursor.execute(insert_query, (session_id, current_user_obj.id, title, content))
             conn.commit()
-            new_note_id = cursor.lastrowid # Get the ID of the newly inserted note
+            new_note_id = cursor.lastrowid 
             flash('Ghi chú đã được tạo thành công!', 'success')
-            return redirect(url_for('edit_note', note_id=new_note_id)) # Redirect to edit view of the new note
+            return redirect(url_for('edit_note', note_id=new_note_id))
             
     except Error as e:
-        app.logger.error(f"Error creating note for session {session_id}, user {current_user.id}: {e}")
+        app.logger.error(f"Lỗi tạo ghi chú cho buổi {session_id}, người dùng {current_user_obj.id}: {e}")
         flash(f"Lỗi khi tạo ghi chú: {e}", "danger")
-        if conn: conn.rollback()
+        if conn and conn.is_connected(): conn.rollback()
     finally:
         if cursor: cursor.close()
         if conn and conn.is_connected(): conn.close()
 
-    return render_template('notes_template.html', current_user=current_user, session_info=session_info, note=None, is_new=True)
+    return render_template('notes_template.html', session_info=session_info, note=None, is_new=True, session_id=session_id) # current_user đã có sẵn
 
 
 @app.route('/notes/edit/<int:note_id>', methods=['GET', 'POST'])
 @login_required()
 def edit_note(note_id):
-    """Edits an existing note."""
-    current_user = get_current_user()
+    current_user_obj = get_current_user_object()
     conn = get_db_connection()
     if not conn:
-        flash("Lỗi kết nối cơ sở dữ liệu.", "danger")
         return redirect(url_for('login')) 
 
     note_data = None
-    session_info = None
+    session_info_for_template = None 
     cursor = None
     try:
         cursor = conn.cursor(dictionary=True)
-        # Fetch note and ensure current user owns it
         query_note = """
             SELECT n.id, n.title, n.content, n.session_id, n.user_id,
                    cs.session_title, crs.course_name
             FROM notes n
             LEFT JOIN course_sessions cs ON n.session_id = cs.id
             LEFT JOIN courses crs ON cs.course_id = crs.id
-            WHERE n.id = %s AND n.user_id = %s
-        """
-        cursor.execute(query_note, (note_id, current_user.id))
+            WHERE n.id = %s AND n.user_id = %s 
+        """ 
+        cursor.execute(query_note, (note_id, current_user_obj.id))
         note_data = cursor.fetchone()
 
         if not note_data:
             flash("Ghi chú không tồn tại hoặc bạn không có quyền chỉnh sửa.", "danger")
-            # Determine a sensible redirect based on user role
-            if current_user.role == 'student':
-                 # Try to find if the note belongs to a session they have access to
-                cursor.execute("SELECT session_id FROM notes WHERE id = %s", (note_id,))
-                original_note_session = cursor.fetchone()
-                if original_note_session and original_note_session['session_id']:
-                    return redirect(url_for('course_notes_overview', session_id=original_note_session['session_id']))
-                return redirect(url_for('student_dashboard'))
-            else: # faculty or other roles
-                return redirect(url_for('faculty_dashboard'))
+            return redirect(url_for('student_dashboard') if current_user_obj.role == 'student' else url_for('faculty_dashboard'))
 
-
-        # Construct session_info if session_id is present
         if note_data['session_id']:
-            session_info = {
+             session_info_for_template = { # Đổi tên biến để tránh nhầm lẫn
                 'id': note_data['session_id'],
                 'session_title': note_data['session_title'],
                 'course_name': note_data['course_name']
@@ -783,86 +676,84 @@ def edit_note(note_id):
             content = request.form.get('content', note_data['content'])
             
             update_query = "UPDATE notes SET title = %s, content = %s, updated_at = CURRENT_TIMESTAMP WHERE id = %s AND user_id = %s"
-            cursor.execute(update_query, (title, content, note_id, current_user.id))
+            cursor.execute(update_query, (title, content, note_id, current_user_obj.id))
             conn.commit()
             flash('Ghi chú đã được cập nhật!', 'success')
-            # Refresh note_data after update
-            cursor.execute(query_note, (note_id, current_user.id)) # Re-fetch
-            note_data = cursor.fetchone()
-            # return redirect(url_for('edit_note', note_id=note_id)) # Stay on page or redirect to overview
+            cursor.execute(query_note, (note_id, current_user_obj.id)) 
+            note_data = cursor.fetchone() # Tải lại dữ liệu mới nhất
+            if note_data and note_data['session_id']: # Cập nhật lại session_info_for_template
+                 session_info_for_template = {
+                    'id': note_data['session_id'],
+                    'session_title': note_data['session_title'],
+                    'course_name': note_data['course_name']
+                }
 
     except Error as e:
-        app.logger.error(f"Error editing note {note_id} for user {current_user.id}: {e}")
+        app.logger.error(f"Lỗi sửa ghi chú {note_id} cho người dùng {current_user_obj.id}: {e}")
         flash(f"Lỗi khi cập nhật ghi chú: {e}", "danger")
-        if conn: conn.rollback()
+        if conn and conn.is_connected(): conn.rollback()
     finally:
         if cursor: cursor.close()
         if conn and conn.is_connected(): conn.close()
 
-    if not note_data: # If fetching failed initially or after an error
-        # This case should ideally be caught earlier, but as a fallback:
+    if not note_data: 
         flash("Không thể tải ghi chú để chỉnh sửa.", "danger")
-        return redirect(url_for('student_dashboard') if current_user.role == 'student' else url_for('faculty_dashboard'))
+        return redirect(url_for('student_dashboard') if current_user_obj.role == 'student' else url_for('faculty_dashboard'))
         
-    return render_template('notes_template.html', current_user=current_user, note=note_data, session_info=session_info, is_new=False)
+    return render_template('notes_template.html', note=note_data, session_info=session_info_for_template, is_new=False, session_id=note_data.get('session_id')) # current_user đã có sẵn
 
 
 @app.route('/notes/delete/<int:note_id>', methods=['POST'])
 @login_required()
 def delete_note(note_id):
-    """Deletes a note."""
-    current_user = get_current_user()
+    current_user_obj = get_current_user_object()
     conn = get_db_connection()
     if not conn:
-        flash("Lỗi kết nối cơ sở dữ liệu.", "danger")
         return jsonify({'success': False, 'message': 'Lỗi kết nối cơ sở dữ liệu.'})
 
     cursor = None
     original_session_id = None
     try:
         cursor = conn.cursor(dictionary=True)
-        # Get session_id before deleting for redirection
-        cursor.execute("SELECT session_id FROM notes WHERE id = %s AND user_id = %s", (note_id, current_user.id))
+        cursor.execute("SELECT session_id FROM notes WHERE id = %s AND user_id = %s", (note_id, current_user_obj.id))
         note_info = cursor.fetchone()
         if note_info:
             original_session_id = note_info['session_id']
+        else: 
+            return jsonify({'success': False, 'message': 'Không tìm thấy ghi chú hoặc không có quyền xóa.'}) # flash() không hoạt động tốt với jsonify
+
 
         delete_query = "DELETE FROM notes WHERE id = %s AND user_id = %s"
-        cursor.execute(delete_query, (note_id, current_user.id))
+        cursor.execute(delete_query, (note_id, current_user_obj.id))
         conn.commit()
 
         if cursor.rowcount > 0:
-            flash('Ghi chú đã được xóa.', 'success')
-            if original_session_id:
-                 return jsonify({'success': True, 'redirect_url': url_for('course_notes_overview', session_id=original_session_id)})
-            else: # If note was not tied to a session or session_id is lost
-                 return jsonify({'success': True, 'redirect_url': url_for('student_dashboard' if current_user.role == 'student' else 'faculty_dashboard')})
+            flash('Ghi chú đã được xóa.', 'success') # flash sẽ hiển thị ở trang redirect tiếp theo
+            redirect_url = url_for('course_notes_overview', session_id=original_session_id) if original_session_id else \
+                           (url_for('student_dashboard') if current_user_obj.role == 'student' else url_for('faculty_dashboard'))
+            return jsonify({'success': True, 'redirect_url': redirect_url})
         else:
-            flash('Không tìm thấy ghi chú hoặc bạn không có quyền xóa.', 'warning')
-            return jsonify({'success': False, 'message': 'Không tìm thấy ghi chú hoặc không có quyền xóa.'})
+            return jsonify({'success': False, 'message': 'Không thể xóa ghi chú.'})
 
     except Error as e:
-        app.logger.error(f"Error deleting note {note_id} for user {current_user.id}: {e}")
-        flash(f"Lỗi khi xóa ghi chú: {e}", "danger")
-        if conn: conn.rollback()
+        app.logger.error(f"Lỗi xóa ghi chú {note_id} cho người dùng {current_user_obj.id}: {e}")
+        if conn and conn.is_connected(): conn.rollback()
         return jsonify({'success': False, 'message': f'Lỗi cơ sở dữ liệu: {e}'})
     finally:
         if cursor: cursor.close()
         if conn and conn.is_connected(): conn.close()
     
-    # Fallback redirect if original_session_id was not found
-    fallback_redirect = url_for('student_dashboard') if current_user.role == 'student' else url_for('faculty_dashboard')
-    return jsonify({'success': False, 'message': 'Lỗi không xác định.', 'redirect_url': fallback_redirect })
+    fallback_redirect = url_for('student_dashboard') if current_user_obj.role == 'student' else url_for('faculty_dashboard')
+    return jsonify({'success': False, 'message': 'Lỗi không xác định khi xóa.', 'redirect_url': fallback_redirect })
 
 
-# --- Flashcard Routes (Example - Needs to be fully converted) ---
+# --- Flashcard Routes ---
 @app.route('/student/flashcard_hub/course/<int:course_id>')
 @login_required(role='student')
 def student_flashcard_hub_course(course_id):
-    """Displays flashcard hubs for a specific course for a student."""
-    current_user = get_current_user()
+    current_user_obj = get_current_user_object()
     conn = get_db_connection()
-    if not conn: return redirect(url_for('student_dashboard')) # Simplified error handling
+    if not conn: return redirect(url_for('student_dashboard')) 
 
     course_info = None
     hubs = []
@@ -874,25 +765,28 @@ def student_flashcard_hub_course(course_id):
         if not course_info:
             flash("Khóa học không tồn tại.", "danger")
             return redirect(url_for('student_dashboard'))
+        
+        cursor.execute("SELECT * FROM enrollments WHERE student_id = %s AND course_id = %s", (current_user_obj.id, course_id))
+        if not cursor.fetchone():
+            flash("Bạn chưa ghi danh vào khóa học này để xem flashcards.", "warning")
+            return redirect(url_for('student_dashboard'))
 
-        # Get flashcard hubs for this user and course
         hub_query = "SELECT id, name, created_at FROM flashcard_hubs WHERE user_id = %s AND course_id = %s ORDER BY name"
-        cursor.execute(hub_query, (current_user.id, course_id))
+        cursor.execute(hub_query, (current_user_obj.id, course_id))
         hubs = cursor.fetchall()
     except Error as e:
-        app.logger.error(f"DB error fetching flashcard hubs for course {course_id}, user {current_user.id}: {e}")
+        app.logger.error(f"Lỗi CSDL lấy flashcard hubs cho khóa {course_id}, người dùng {current_user_obj.id}: {e}")
         flash("Lỗi tải bộ flashcard.", "danger")
     finally:
         if cursor: cursor.close()
         if conn and conn.is_connected(): conn.close()
 
-    return render_template('student_flashcard_hub.html', current_user=current_user, course=course_info, hubs=hubs)
+    return render_template('student_flashcard_hub.html', course=course_info, hubs=hubs) # current_user đã có sẵn
 
 @app.route('/student/flashcard_hub/create/<int:course_id>', methods=['POST'])
 @login_required(role='student')
 def create_flashcard_hub(course_id):
-    """Creates a new flashcard hub for a student within a course."""
-    current_user = get_current_user()
+    current_user_obj = get_current_user_object()
     hub_name = request.form.get('hub_name')
     if not hub_name:
         flash("Tên bộ flashcard là bắt buộc.", "warning")
@@ -903,15 +797,20 @@ def create_flashcard_hub(course_id):
 
     cursor = None
     try:
-        cursor = conn.cursor()
+        cursor = conn.cursor(dictionary=True) 
+        cursor.execute("SELECT * FROM enrollments WHERE student_id = %s AND course_id = %s", (current_user_obj.id, course_id))
+        if not cursor.fetchone():
+            flash("Bạn cần ghi danh vào khóa học để tạo bộ flashcard.", "warning")
+            return redirect(url_for('student_dashboard'))
+
         insert_query = "INSERT INTO flashcard_hubs (user_id, course_id, name) VALUES (%s, %s, %s)"
-        cursor.execute(insert_query, (current_user.id, course_id, hub_name))
+        cursor.execute(insert_query, (current_user_obj.id, course_id, hub_name))
         conn.commit()
         flash(f"Bộ flashcard '{hub_name}' đã được tạo.", "success")
     except Error as e:
-        app.logger.error(f"DB error creating flashcard hub for course {course_id}, user {current_user.id}: {e}")
+        app.logger.error(f"Lỗi CSDL tạo flashcard hub cho khóa {course_id}, người dùng {current_user_obj.id}: {e}")
         flash(f"Lỗi tạo bộ flashcard: {e}", "danger")
-        if conn: conn.rollback()
+        if conn and conn.is_connected(): conn.rollback()
     finally:
         if cursor: cursor.close()
         if conn and conn.is_connected(): conn.close()
@@ -922,49 +821,45 @@ def create_flashcard_hub(course_id):
 @app.route('/student/flashcards/view/<int:hub_id>')
 @login_required(role='student')
 def student_view_flashcards(hub_id):
-    """Displays flashcards within a specific hub for a student."""
-    current_user = get_current_user()
+    current_user_obj = get_current_user_object()
     conn = get_db_connection()
-    if not conn: return redirect(url_for('student_dashboard')) # Simplified
+    if not conn: return redirect(url_for('student_dashboard'))
 
     hub_info = None
     flashcards_list = []
     cursor = None
     try:
         cursor = conn.cursor(dictionary=True)
-        # Get hub info and verify ownership
         hub_query = """
-            SELECT fh.id, fh.name, fh.course_id, c.course_name 
+            SELECT fh.id, fh.name, fh.course_id, c.course_name, c.course_code
             FROM flashcard_hubs fh
             JOIN courses c ON fh.course_id = c.id
             WHERE fh.id = %s AND fh.user_id = %s
         """
-        cursor.execute(hub_query, (hub_id, current_user.id))
+        cursor.execute(hub_query, (hub_id, current_user_obj.id))
         hub_info = cursor.fetchone()
 
         if not hub_info:
             flash("Bộ flashcard không tồn tại hoặc bạn không có quyền truy cập.", "danger")
-            return redirect(url_for('student_dashboard')) # Or a more relevant course page
+            return redirect(url_for('student_dashboard')) 
 
-        # Get flashcards for this hub
         fc_query = "SELECT id, question, answer FROM flashcards WHERE hub_id = %s ORDER BY id"
         cursor.execute(fc_query, (hub_id,))
         flashcards_list = cursor.fetchall()
     except Error as e:
-        app.logger.error(f"DB error fetching flashcards for hub {hub_id}, user {current_user.id}: {e}")
+        app.logger.error(f"Lỗi CSDL lấy flashcards cho hub {hub_id}, người dùng {current_user_obj.id}: {e}")
         flash("Lỗi tải flashcards.", "danger")
     finally:
         if cursor: cursor.close()
         if conn and conn.is_connected(): conn.close()
         
-    return render_template('student_view_flashcards.html', current_user=current_user, hub=hub_info, flashcards=flashcards_list)
+    return render_template('student_view_flashcards.html', hub=hub_info, flashcards=flashcards_list) # current_user đã có sẵn
 
 
 @app.route('/student/flashcards/add_to_hub/<int:hub_id>', methods=['POST'])
 @login_required(role='student')
 def add_flashcard_to_hub(hub_id):
-    """Adds a new flashcard to a student's hub."""
-    current_user = get_current_user()
+    current_user_obj = get_current_user_object()
     question = request.form.get('question')
     answer = request.form.get('answer')
 
@@ -977,9 +872,8 @@ def add_flashcard_to_hub(hub_id):
 
     cursor = None
     try:
-        cursor = conn.cursor()
-        # Verify user owns the hub first (important for security)
-        cursor.execute("SELECT id FROM flashcard_hubs WHERE id = %s AND user_id = %s", (hub_id, current_user.id))
+        cursor = conn.cursor() # Không cần dictionary=True cho SELECT đơn giản này
+        cursor.execute("SELECT id FROM flashcard_hubs WHERE id = %s AND user_id = %s", (hub_id, current_user_obj.id))
         if not cursor.fetchone():
             flash("Bạn không có quyền thêm flashcard vào bộ này.", "danger")
             return redirect(url_for('student_dashboard'))
@@ -989,9 +883,9 @@ def add_flashcard_to_hub(hub_id):
         conn.commit()
         flash("Flashcard đã được thêm.", "success")
     except Error as e:
-        app.logger.error(f"DB error adding flashcard to hub {hub_id}, user {current_user.id}: {e}")
+        app.logger.error(f"Lỗi CSDL thêm flashcard vào hub {hub_id}, người dùng {current_user_obj.id}: {e}")
         flash(f"Lỗi thêm flashcard: {e}", "danger")
-        if conn: conn.rollback()
+        if conn and conn.is_connected(): conn.rollback()
     finally:
         if cursor: cursor.close()
         if conn and conn.is_connected(): conn.close()
@@ -999,12 +893,11 @@ def add_flashcard_to_hub(hub_id):
     return redirect(url_for('student_view_flashcards', hub_id=hub_id))
 
 
-# --- Quiz Routes (Example - Needs to be fully converted) ---
-@app.route('/faculty/manage_quiz/<int:course_id>', methods=['GET', 'POST'])
+# --- Quiz Routes ---
+@app.route('/faculty/manage_quiz/<int:course_id>', methods=['GET']) 
 @login_required(role='faculty')
 def faculty_manage_quiz(course_id):
-    """Allows faculty to manage quizzes for a course (view existing, link to create new)."""
-    current_user = get_current_user()
+    current_user_obj = get_current_user_object()
     conn = get_db_connection()
     if not conn: return redirect(url_for('faculty_dashboard'))
 
@@ -1013,132 +906,145 @@ def faculty_manage_quiz(course_id):
     cursor = None
     try:
         cursor = conn.cursor(dictionary=True)
-        # Verify faculty owns course
-        cursor.execute("SELECT id, course_code, course_name FROM courses WHERE id = %s AND faculty_id = %s", (course_id, current_user.id))
+        cursor.execute("SELECT id, course_code, course_name FROM courses WHERE id = %s AND faculty_id = %s", (course_id, current_user_obj.id))
         course_info = cursor.fetchone()
         if not course_info:
             flash("Khóa học không hợp lệ hoặc bạn không có quyền quản lý quiz cho khóa học này.", "danger")
             return redirect(url_for('faculty_dashboard'))
 
-        # Get quizzes for this course
         quiz_query = "SELECT id, title, created_at FROM quizzes WHERE course_id = %s AND created_by = %s ORDER BY created_at DESC"
-        cursor.execute(quiz_query, (course_id, current_user.id))
+        cursor.execute(quiz_query, (course_id, current_user_obj.id))
         quizzes_list = cursor.fetchall()
     except Error as e:
-        app.logger.error(f"DB error fetching quizzes for course {course_id}, faculty {current_user.id}: {e}")
+        app.logger.error(f"Lỗi CSDL lấy quizzes cho khóa {course_id}, giảng viên {current_user_obj.id}: {e}")
         flash("Lỗi tải danh sách quiz.", "danger")
     finally:
         if cursor: cursor.close()
         if conn and conn.is_connected(): conn.close()
 
-    return render_template('faculty_manage_quiz.html', current_user=current_user, course=course_info, quizzes=quizzes_list)
+    return render_template('faculty_manage_quiz.html', course=course_info, quizzes=quizzes_list) # current_user đã có sẵn
 
 
 @app.route('/faculty/quiz/create/<int:course_id>', methods=['GET', 'POST'])
 @login_required(role='faculty')
 def faculty_create_quiz(course_id):
-    """Allows faculty to create a new quiz with questions."""
-    current_user = get_current_user()
+    current_user_obj = get_current_user_object()
     conn = get_db_connection()
     if not conn:
-        flash("Lỗi kết nối cơ sở dữ liệu.", "danger")
         return redirect(url_for('faculty_manage_quiz', course_id=course_id))
 
     course_info = None
     cursor = None
     try:
         cursor = conn.cursor(dictionary=True)
-        # Verify faculty owns course
-        cursor.execute("SELECT id, course_code, course_name FROM courses WHERE id = %s AND faculty_id = %s", (course_id, current_user.id))
+        cursor.execute("SELECT id, course_code, course_name FROM courses WHERE id = %s AND faculty_id = %s", (course_id, current_user_obj.id))
         course_info = cursor.fetchone()
         if not course_info:
-            flash("Khóa học không hợp lệ.", "danger")
+            flash("Khóa học không hợp lệ hoặc bạn không có quyền tạo quiz cho khóa học này.", "danger")
             return redirect(url_for('faculty_dashboard'))
 
         if request.method == 'POST':
             quiz_title = request.form.get('quiz_title')
             if not quiz_title:
                 flash("Tiêu đề quiz là bắt buộc.", "warning")
-                return render_template('faculty_create_quiz_form.html', current_user=current_user, course=course_info, quiz=None, questions=[]) # Reshow form
+                questions_data = [] # Để giữ lại dữ liệu câu hỏi nếu form submit lỗi
+                q_idx = 0
+                while True:
+                    q_text = request.form.get(f'questions[{q_idx}][question_text]')
+                    if q_text is None and q_idx > 0 : break # Dừng nếu không còn câu hỏi (và đã có ít nhất 1 câu)
+                    if q_text is None and q_idx == 0 : # Xử lý trường hợp không có câu hỏi nào được nhập ban đầu
+                        questions_data.append({}) # Thêm một câu hỏi trống để template render
+                        break
+                    questions_data.append({
+                        'question_text': q_text or "",
+                        'question_type': request.form.get(f'questions[{q_idx}][question_type]'),
+                        'options': [opt for opt_idx in range(4) if (opt := request.form.get(f'questions[{q_idx}][options][{opt_idx}]'))], # Max 4 options assumed
+                        'correct_answer': request.form.get(f'questions[{q_idx}][correct_answer]')
+                    })
+                    q_idx += 1
+                return render_template('faculty_create_quiz_form.html', course=course_info, quiz_title=quiz_title, questions=questions_data)
+
 
             quiz_id = None
             try:
-                # Start transaction
-                # conn.start_transaction() # For connectors that support it explicitly
+                # Bắt đầu transaction (nếu MySQL engine hỗ trợ và connector cho phép)
+                # conn.start_transaction() 
                 
-                # Insert quiz
                 quiz_insert_query = "INSERT INTO quizzes (course_id, title, created_by) VALUES (%s, %s, %s)"
-                cursor.execute(quiz_insert_query, (course_id, quiz_title, current_user.id))
+                cursor.execute(quiz_insert_query, (course_id, quiz_title, current_user_obj.id))
                 quiz_id = cursor.lastrowid
-
-                # Process questions
-                # Questions are expected to be submitted in a structured way, e.g.,
-                # question_text_1, question_type_1, options_1_1, options_1_2, correct_answer_1
-                # question_text_2, ...
                 
-                # This is a simplified way to get questions; a dynamic JS form would be better
-                # For now, let's assume a fixed number or a way to count them from form keys
-                i = 0
+                q_idx = 0
+                any_question_added = False
                 while True:
-                    i += 1
-                    question_text = request.form.get(f'questions[{i-1}][question_text]')
-                    if not question_text:
-                        break # No more questions
+                    question_text = request.form.get(f'questions[{q_idx}][question_text]')
+                    # Dừng nếu không có text câu hỏi VÀ đây không phải là câu hỏi đầu tiên (để cho phép quiz không có câu hỏi ban đầu)
+                    if not question_text and q_idx > 0 and not any_question_added : 
+                        break 
+                    if not question_text and any_question_added: # Nếu đã có câu hỏi được thêm, câu hỏi trống tiếp theo nghĩa là hết
+                        break
+                    if not question_text and q_idx == 0 and not request.form.get(f'questions[{q_idx+1}][question_text]'): # Nếu câu đầu trống và không có câu sau
+                        break
 
-                    question_type = request.form.get(f'questions[{i-1}][question_type]')
-                    # For multiple choice, options might be like: questions[0][options][0], questions[0][options][1]
-                    # This part needs careful handling based on your HTML form structure
+
+                    question_type = request.form.get(f'questions[{q_idx}][question_type]')
+                    correct_answer = request.form.get(f'questions[{q_idx}][correct_answer]')
+                    
                     options_list = []
-                    opt_idx = 0
-                    while True:
-                        option_val = request.form.get(f'questions[{i-1}][options][{opt_idx}]')
-                        if option_val is None : # Check for None, as empty string could be a valid (though unlikely) option
-                            break
-                        if option_val.strip() != "": # Only add non-empty options
-                           options_list.append(option_val.strip())
-                        opt_idx += 1
+                    if question_type == 'multiple_choice':
+                        opt_inner_idx = 0
+                        while True: # Lấy tối đa 4-5 options hoặc cho đến khi không còn
+                            option_val = request.form.get(f'questions[{q_idx}][options][{opt_inner_idx}]')
+                            if option_val is None or opt_inner_idx >= 5: break 
+                            if option_val.strip(): options_list.append(option_val.strip())
+                            opt_inner_idx +=1
                     
-                    options_json = None
-                    if question_type == 'multiple_choice' and options_list:
-                        options_json = jsonify(options_list).get_data(as_text=True) # Store as JSON string
-                    
-                    correct_answer = request.form.get(f'questions[{i-1}][correct_answer]')
+                    options_json = json.dumps(options_list) if options_list else None
 
                     if question_text and question_type and correct_answer:
                         q_insert = """INSERT INTO questions (quiz_id, question_text, question_type, options, correct_answer)
                                       VALUES (%s, %s, %s, %s, %s)"""
                         cursor.execute(q_insert, (quiz_id, question_text, question_type, options_json, correct_answer))
+                        any_question_added = True
+                    elif question_text and not (question_type and correct_answer): # Nếu có text câu hỏi nhưng thiếu thông tin khác
+                        flash(f"Câu hỏi {q_idx+1} thiếu loại câu hỏi hoặc đáp án đúng.", "warning")
+                        # Không commit và reload form ở đây, để người dùng sửa
+                    q_idx += 1
                 
-                conn.commit()
+                if not any_question_added and quiz_id: # Nếu quiz được tạo nhưng không có câu hỏi nào hợp lệ
+                    flash("Quiz đã được tạo nhưng chưa có câu hỏi nào được thêm. Vui lòng thêm câu hỏi.", "info")
+                    # Không commit nếu muốn quiz phải có câu hỏi, hoặc commit và cho phép sửa sau
+                    # conn.commit() # Bỏ commit nếu muốn quiz phải có câu hỏi
+                    # return redirect(url_for('faculty_edit_quiz', quiz_id=quiz_id)) # Chuyển đến trang sửa quiz
+                
+                conn.commit() # Commit sau khi tất cả câu hỏi đã được xử lý
                 flash(f"Quiz '{quiz_title}' đã được tạo thành công!", "success")
                 return redirect(url_for('faculty_manage_quiz', course_id=course_id))
 
             except Error as e:
-                app.logger.error(f"DB Error creating quiz/questions for course {course_id}: {e}")
+                app.logger.error(f"Lỗi CSDL tạo quiz/câu hỏi cho khóa {course_id}: {e}")
                 flash(f"Lỗi khi tạo quiz: {e}", "danger")
-                if conn: conn.rollback()
-            except Exception as e: # Catch other errors
-                app.logger.error(f"General error creating quiz: {e}")
-                flash(f"Lỗi không xác định: {e}", "danger")
-                if conn: conn.rollback() # Ensure rollback for non-DB errors too if transaction started
-
-        # GET request: show form to create quiz
-        return render_template('faculty_create_quiz_form.html', current_user=current_user, course=course_info, quiz=None, questions=[])
+                if conn and conn.is_connected(): conn.rollback()
+            except Exception as e:
+                app.logger.error(f"Lỗi chung khi tạo quiz: {e}")
+                flash(f"Lỗi không xác định khi tạo quiz: {e}", "danger")
+                if conn and conn.is_connected(): conn.rollback()
+        
+        # GET request
+        return render_template('faculty_create_quiz_form.html', course=course_info, quiz=None, questions=[{}]) # current_user đã có sẵn
 
     except Error as e:
-        app.logger.error(f"DB error in faculty_create_quiz GET for course {course_id}: {e}")
+        app.logger.error(f"Lỗi CSDL trong faculty_create_quiz GET cho khóa {course_id}: {e}")
         flash(f"Lỗi tải trang tạo quiz: {e}", "danger")
         return redirect(url_for('faculty_manage_quiz', course_id=course_id))
     finally:
         if cursor: cursor.close()
         if conn and conn.is_connected(): conn.close()
 
-
 @app.route('/student/take_quiz/<int:quiz_id>')
 @login_required(role='student')
 def student_take_quiz(quiz_id):
-    """Allows a student to take a quiz."""
-    current_user = get_current_user()
+    current_user_obj = get_current_user_object()
     conn = get_db_connection()
     if not conn: return redirect(url_for('student_dashboard'))
 
@@ -1147,153 +1053,151 @@ def student_take_quiz(quiz_id):
     cursor = None
     try:
         cursor = conn.cursor(dictionary=True)
-        # Get quiz details
-        cursor.execute("SELECT id, title, course_id FROM quizzes WHERE id = %s", (quiz_id,))
+        cursor.execute("SELECT q.id, q.title, q.course_id, c.course_name FROM quizzes q JOIN courses c ON q.course_id = c.id WHERE q.id = %s", (quiz_id,))
         quiz_info = cursor.fetchone()
         if not quiz_info:
             flash("Quiz không tồn tại.", "danger")
-            return redirect(url_for('student_dashboard')) # Or a course page
+            return redirect(url_for('student_dashboard'))
+        
+        cursor.execute("SELECT * FROM enrollments WHERE student_id = %s AND course_id = %s", (current_user_obj.id, quiz_info['course_id']))
+        if not cursor.fetchone():
+            flash("Bạn chưa ghi danh vào khóa học của quiz này.", "warning")
+            return redirect(url_for('student_dashboard'))
 
-        # Get questions for the quiz
-        # Options are stored as JSON string, need to parse them in template or here
         q_query = "SELECT id, question_text, question_type, options FROM questions WHERE quiz_id = %s ORDER BY id"
         cursor.execute(q_query, (quiz_id,))
         questions_raw = cursor.fetchall()
         
-        # Process options if they are JSON
-        import json
         for q in questions_raw:
             if q['question_type'] == 'multiple_choice' and q['options']:
                 try:
                     q['options_list'] = json.loads(q['options'])
-                except json.JSONDecodeError:
-                    q['options_list'] = [] # Handle malformed JSON
+                except (json.JSONDecodeError, TypeError):
+                    q['options_list'] = [] 
             else:
                 q['options_list'] = []
             questions.append(q)
 
-
     except Error as e:
-        app.logger.error(f"DB error fetching quiz {quiz_id} for student {current_user.id}: {e}")
+        app.logger.error(f"Lỗi CSDL lấy quiz {quiz_id} cho sinh viên {current_user_obj.id}: {e}")
         flash("Lỗi tải quiz.", "danger")
+        return redirect(url_for('student_dashboard')) 
     finally:
         if cursor: cursor.close()
         if conn and conn.is_connected(): conn.close()
-
-    if not quiz_info: # Should be caught earlier
-        return redirect(url_for('student_dashboard'))
         
-    return render_template('student_take_quiz.html', current_user=current_user, quiz=quiz_info, questions=questions)
+    return render_template('student_take_quiz.html', quiz=quiz_info, questions=questions) # current_user đã có sẵn
 
 
 @app.route('/student/submit_quiz/<int:quiz_id>', methods=['POST'])
 @login_required(role='student')
 def student_submit_quiz(quiz_id):
-    """Handles submission of a student's quiz attempt."""
-    current_user = get_current_user()
+    current_user_obj = get_current_user_object()
     conn = get_db_connection()
     if not conn:
-        flash("Lỗi kết nối cơ sở dữ liệu.", "danger")
         return redirect(url_for('student_take_quiz', quiz_id=quiz_id))
 
     cursor = None
     attempt_id = None
-    total_score = 0
+    total_score_count = 0 
     num_questions = 0
 
     try:
         cursor = conn.cursor(dictionary=True)
         
-        # Get all questions and their correct answers for this quiz
+        cursor.execute("SELECT course_id FROM quizzes WHERE id = %s", (quiz_id,))
+        quiz_course_data = cursor.fetchone()
+        if not quiz_course_data:
+            flash("Quiz không tồn tại.", "danger")
+            return redirect(url_for('student_dashboard'))
+        
+        cursor.execute("SELECT * FROM enrollments WHERE student_id = %s AND course_id = %s", (current_user_obj.id, quiz_course_data['course_id']))
+        if not cursor.fetchone():
+            flash("Bạn không được phép làm quiz này.", "warning")
+            return redirect(url_for('student_dashboard'))
+
+
         cursor.execute("SELECT id, correct_answer, question_type FROM questions WHERE quiz_id = %s", (quiz_id,))
-        quiz_questions = {q['id']: {'correct': q['correct_answer'], 'type': q['question_type']} for q in cursor.fetchall()}
-        num_questions = len(quiz_questions)
+        quiz_questions_db = cursor.fetchall()
+        quiz_questions_map = {q['id']: {'correct': q['correct_answer'], 'type': q['question_type']} for q in quiz_questions_db}
+        num_questions = len(quiz_questions_map)
 
-        if not num_questions:
-            flash("Quiz này không có câu hỏi nào.", "warning")
-            return redirect(url_for('student_dashboard')) # Or course page
+        if not num_questions: # Mặc dù quiz có thể được tạo mà không có câu hỏi, nhưng không nên cho phép submit
+            flash("Quiz này hiện không có câu hỏi nào để làm.", "warning")
+            return redirect(url_for('student_select_session', course_id=quiz_course_data['course_id']) if quiz_course_data.get('course_id') else url_for('student_dashboard'))
 
-        # Create a quiz attempt entry
+
         attempt_insert_query = "INSERT INTO quiz_attempts (quiz_id, student_id, score) VALUES (%s, %s, %s)"
-        # Initial score, will be updated
-        cursor.execute(attempt_insert_query, (quiz_id, current_user.id, 0.0)) 
+        cursor.execute(attempt_insert_query, (quiz_id, current_user_obj.id, 0.0)) 
         attempt_id = cursor.lastrowid
 
-        # Process submitted answers
-        # Form data is expected like: answers[question_id_1], answers[question_id_2]
-        submitted_answers = request.form # Or request.form.to_dict() if needed
+        submitted_answers_form = request.form 
 
-        for q_id, q_data in quiz_questions.items():
-            student_ans_key = f"answers[{q_id}]" # Assuming form names like this
-            student_answer = submitted_answers.get(student_ans_key)
+        for q_db_id, q_data in quiz_questions_map.items():
+            student_ans_key = f"answers[{q_db_id}]" 
+            student_answer_val = submitted_answers_form.get(student_ans_key)
             
             is_correct = False
-            # Simple comparison, might need more sophisticated logic for different question types
-            # For MC, correct_answer might be the option text or an index. This assumes text.
-            if student_answer and student_answer.strip().lower() == q_data['correct'].strip().lower():
+            correct_db_answer_norm = q_data['correct'].strip().lower() if q_data['correct'] else ""
+            student_submitted_answer_norm = student_answer_val.strip().lower() if student_answer_val else ""
+
+            if student_answer_val is not None and student_submitted_answer_norm == correct_db_answer_norm:
                 is_correct = True
-                total_score += 1
+                total_score_count += 1
             
             ans_insert_query = """
                 INSERT INTO attempt_answers (attempt_id, question_id, student_answer, is_correct)
                 VALUES (%s, %s, %s, %s)
             """
-            cursor.execute(ans_insert_query, (attempt_id, q_id, student_answer, is_correct))
+            cursor.execute(ans_insert_query, (attempt_id, q_db_id, student_answer_val, is_correct))
 
-        # Update the score in quiz_attempts table
-        final_percentage_score = (total_score / num_questions) * 100 if num_questions > 0 else 0
+        final_percentage_score = (total_score_count / num_questions) * 100 if num_questions > 0 else 0
         cursor.execute("UPDATE quiz_attempts SET score = %s WHERE id = %s", (final_percentage_score, attempt_id))
         
         conn.commit()
-        flash(f"Bài quiz đã được nộp! Điểm của bạn: {total_score}/{num_questions} ({final_percentage_score:.2f}%)", "success")
+        flash(f"Bài quiz đã được nộp! Điểm của bạn: {total_score_count}/{num_questions} ({final_percentage_score:.2f}%)", "success")
         return redirect(url_for('student_quiz_results', attempt_id=attempt_id))
 
     except Error as e:
-        app.logger.error(f"DB error submitting quiz {quiz_id} for student {current_user.id}: {e}")
+        app.logger.error(f"Lỗi CSDL khi nộp quiz {quiz_id} cho sinh viên {current_user_obj.id}: {e}")
         flash(f"Lỗi khi nộp bài quiz: {e}", "danger")
-        if conn: conn.rollback()
-        return redirect(url_for('student_take_quiz', quiz_id=quiz_id))
-    except Exception as e: # Catch other unexpected errors
-        app.logger.error(f"Unexpected error submitting quiz {quiz_id}: {e}")
-        flash(f"Lỗi không mong muốn: {e}", "danger")
-        if conn: conn.rollback()
-        return redirect(url_for('student_take_quiz', quiz_id=quiz_id))
+        if conn and conn.is_connected(): conn.rollback()
+    except Exception as e:
+        app.logger.error(f"Lỗi không mong muốn khi nộp quiz {quiz_id}: {e}")
+        flash(f"Lỗi không mong muốn khi nộp quiz: {e}", "danger")
+        if conn and conn.is_connected(): conn.rollback()
     finally:
         if cursor: cursor.close()
         if conn and conn.is_connected(): conn.close()
+    return redirect(url_for('student_take_quiz', quiz_id=quiz_id)) 
 
 
 @app.route('/student/quiz_results/<int:attempt_id>')
 @login_required(role='student')
 def student_quiz_results(attempt_id):
-    """Displays the results of a specific quiz attempt for a student."""
-    current_user = get_current_user()
+    current_user_obj = get_current_user_object()
     conn = get_db_connection()
     if not conn: return redirect(url_for('student_dashboard'))
 
     attempt_details = None
     answers_details = []
-    quiz_title = ""
     cursor = None
     try:
         cursor = conn.cursor(dictionary=True)
-        # Get attempt details and verify student ownership
         attempt_query = """
-            SELECT qa.id, qa.quiz_id, qa.student_id, qa.score, qa.attempted_at, q.title as quiz_title
+            SELECT qa.id, qa.quiz_id, qa.student_id, qa.score, qa.attempted_at, q.title as quiz_title, c.course_name
             FROM quiz_attempts qa
             JOIN quizzes q ON qa.quiz_id = q.id
+            JOIN courses c ON q.course_id = c.id
             WHERE qa.id = %s AND qa.student_id = %s
         """
-        cursor.execute(attempt_query, (attempt_id, current_user.id))
+        cursor.execute(attempt_query, (attempt_id, current_user_obj.id))
         attempt_details = cursor.fetchone()
 
         if not attempt_details:
             flash("Không tìm thấy kết quả bài làm hoặc bạn không có quyền xem.", "danger")
             return redirect(url_for('student_dashboard'))
         
-        quiz_title = attempt_details['quiz_title']
-
-        # Get answers for this attempt with question text and correct answer
         answers_query = """
             SELECT aa.student_answer, aa.is_correct, q.question_text, q.correct_answer, q.options, q.question_type
             FROM attempt_answers aa
@@ -1304,50 +1208,42 @@ def student_quiz_results(attempt_id):
         cursor.execute(answers_query, (attempt_id,))
         answers_raw = cursor.fetchall()
 
-        import json
         for ans in answers_raw:
             if ans['question_type'] == 'multiple_choice' and ans['options']:
                 try:
                     ans['options_list'] = json.loads(ans['options'])
-                except json.JSONDecodeError:
+                except (json.JSONDecodeError, TypeError): 
                     ans['options_list'] = []
             else:
                 ans['options_list'] = []
             answers_details.append(ans)
 
-
     except Error as e:
-        app.logger.error(f"DB error fetching quiz results for attempt {attempt_id}, student {current_user.id}: {e}")
+        app.logger.error(f"Lỗi CSDL lấy kết quả quiz cho lần làm {attempt_id}, sinh viên {current_user_obj.id}: {e}")
         flash("Lỗi tải kết quả quiz.", "danger")
+        return redirect(url_for('student_dashboard'))
     finally:
         if cursor: cursor.close()
         if conn and conn.is_connected(): conn.close()
-
-    if not attempt_details: # Should be caught
-        return redirect(url_for('student_dashboard'))
         
-    return render_template('student_quiz_results.html', current_user=current_user, attempt=attempt_details, answers=answers_details, quiz_title=quiz_title)
+    return render_template('student_quiz_results.html', attempt=attempt_details, answers=answers_details) # current_user đã có sẵn
 
 # --- General Routes ---
 @app.route('/')
 def index():
-    """Redirects to login page or appropriate dashboard if logged in."""
-    current_user = get_current_user()
-    if current_user:
-        if current_user.role == 'student':
+    current_user_obj = get_current_user_object()
+    if current_user_obj:
+        if current_user_obj.role == 'student':
             return redirect(url_for('student_dashboard'))
-        elif current_user.role == 'faculty':
+        elif current_user_obj.role == 'faculty':
             return redirect(url_for('faculty_dashboard'))
     return redirect(url_for('login'))
 
 @app.context_processor
 def inject_current_year():
-    """Injects the current year into all templates."""
+    """Cung cấp biến current_year cho tất cả các template."""
     return {'current_year': datetime.datetime.now().year}
 
+
 if __name__ == '__main__':
-    # For development, ensure the MySQL server is running and accessible.
-    # You might need to create the 'umtsmartnotes' database manually first if it doesn't exist.
-    # Example: mysql -u root -p -e "CREATE DATABASE IF NOT EXISTS umtsmartnotes;"
-    # Then, create the tables as per the schemas defined above.
     app.run(debug=True)
