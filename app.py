@@ -13,7 +13,7 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 # --- Dữ liệu Người dùng Mẫu CỐ ĐỊNH ---
 STUDENT_ACCOUNTS = {
-    "khang.2302700102@st.umt.edu.vn": {"password": "123", "full_name": "Nguyễn Văn Khang", "major": "Công nghệ thông tin"},
+    "khang.2302700102@st.umt.edu.vn": {"password": "123", "full_name": "Cao Thái KhangKhang", "major": "Công nghệ thông tin"},
     "minh.2301122334@st.umt.edu.vn": {"password": "123", "full_name": "Trần Thị Minh", "major": "Quản trị Kinh doanh"},
 }
 FACULTY_ACCOUNTS = {
