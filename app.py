@@ -219,6 +219,48 @@ def student_dashboard():
     return render_template('index.html', courses=student_courses) # current_user đã có sẵn
 
 
+# @app.route('/student/select_session/<int:course_id>')
+# @login_required(role='student')
+# def student_select_session(course_id):
+#     """Cho phép sinh viên chọn một buổi học của khóa học."""
+#     current_user_obj = get_current_user_object()
+#     conn = get_db_connection()
+#     if not conn:
+#         return redirect(url_for('student_dashboard'))
+
+#     course = None
+#     sessions = []
+#     cursor = None
+#     try:
+#         cursor = conn.cursor(dictionary=True)
+#         cursor.execute("SELECT id, course_code, course_name FROM courses WHERE id = %s", (course_id,))
+#         course = cursor.fetchone()
+
+#         if not course:
+#             flash("Khóa học không tồn tại.", "danger")
+#             return redirect(url_for('student_dashboard'))
+
+#         cursor.execute("SELECT * FROM enrollments WHERE student_id = %s AND course_id = %s", (current_user_obj.id, course_id))
+#         if not cursor.fetchone():
+#             flash("Bạn chưa ghi danh vào khóa học này.", "warning")
+#             return redirect(url_for('student_dashboard'))
+
+#         cursor.execute("""
+#             SELECT id, session_title, session_date, start_time, end_time, lecturer_name, location, event_type 
+#             FROM course_sessions 
+#             WHERE course_id = %s 
+#             ORDER BY session_date DESC, start_time DESC, id DESC
+#         """, (course_id,))
+#         sessions = cursor.fetchall()
+
+#     except Error as e:
+#         app.logger.error(f"Lỗi lấy danh sách buổi học cho khóa {course_id}: {e}")
+#         flash("Không thể tải danh sách buổi học.", "danger")
+#     finally:
+#         if cursor: cursor.close()
+#         if conn and conn.is_connected(): conn.close()
+
+#     return render_template('student_select_session.html', course=course, sessions=sessions) # current_user đã có sẵn
 @app.route('/student/select_session/<int:course_id>')
 @login_required(role='student')
 def student_select_session(course_id):
@@ -226,25 +268,30 @@ def student_select_session(course_id):
     current_user_obj = get_current_user_object()
     conn = get_db_connection()
     if not conn:
-        return redirect(url_for('student_dashboard'))
+        # Nếu không có kết nối DB, flash message đã được set trong get_db_connection
+        # và chúng ta nên chuyển hướng đến một trang an toàn hơn, ví dụ student_dashboard
+        return redirect(url_for('student_dashboard')) # Đã sửa: Chuyển hướng khi không có conn
 
-    course = None
+    course_data = None # Đổi tên từ 'course' để tránh nhầm lẫn với biến 'courses' trong các template khác
     sessions = []
     cursor = None
     try:
         cursor = conn.cursor(dictionary=True)
+        # Lấy thông tin khóa học
         cursor.execute("SELECT id, course_code, course_name FROM courses WHERE id = %s", (course_id,))
-        course = cursor.fetchone()
+        course_data = cursor.fetchone() # Gán dữ liệu vào course_data
 
-        if not course:
+        if not course_data:
             flash("Khóa học không tồn tại.", "danger")
             return redirect(url_for('student_dashboard'))
 
+        # Kiểm tra sinh viên có ghi danh vào khóa học này không
         cursor.execute("SELECT * FROM enrollments WHERE student_id = %s AND course_id = %s", (current_user_obj.id, course_id))
         if not cursor.fetchone():
             flash("Bạn chưa ghi danh vào khóa học này.", "warning")
             return redirect(url_for('student_dashboard'))
 
+        # Lấy các buổi học của khóa học
         cursor.execute("""
             SELECT id, session_title, session_date, start_time, end_time, lecturer_name, location, event_type 
             FROM course_sessions 
@@ -256,11 +303,15 @@ def student_select_session(course_id):
     except Error as e:
         app.logger.error(f"Lỗi lấy danh sách buổi học cho khóa {course_id}: {e}")
         flash("Không thể tải danh sách buổi học.", "danger")
+        # Trong trường hợp lỗi, course_data có thể vẫn là None
+        # Chúng ta vẫn nên cố gắng render template với những gì có thể, hoặc redirect
+        return redirect(url_for('student_dashboard')) # Chuyển hướng khi có lỗi DB nghiêm trọng
     finally:
         if cursor: cursor.close()
         if conn and conn.is_connected(): conn.close()
 
-    return render_template('student_select_session.html', course=course, sessions=sessions) # current_user đã có sẵn
+    # Đảm bảo course_data được truyền vào template với tên là 'course'
+    return render_template('student_select_session.html', course=course_data, sessions=sessions)
 
 # --- Faculty Routes ---
 @app.route('/faculty/dashboard')
