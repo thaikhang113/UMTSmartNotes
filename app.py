@@ -136,7 +136,7 @@ def format_date_display_filter(value, format_str='%d/%m/%Y'):
 def login():
     """Xử lý đăng nhập người dùng."""
     current_user = get_current_user_object()
-    if current_user:
+    if (current_user):
         if current_user.role == 'student':
             return redirect(url_for('student_dashboard'))
         elif current_user.role == 'faculty':
@@ -244,10 +244,18 @@ def student_dashboard():
         return redirect(url_for('login'))
 
     student_courses = []
+    calendar_events = []
+    quizzes_data_for_js = {}
+    course_sessions_data = {}
+    upcoming_events_dashboard = []
+    reviews = []
+    available_quizzes = []
+
     current_user_obj = get_current_user_object()
     cursor = None
     try:
         cursor = conn.cursor(dictionary=True)
+        # Lấy danh sách môn học
         query = """
             SELECT c.id, c.course_code, c.course_name, c.credits
             FROM courses c
@@ -256,14 +264,54 @@ def student_dashboard():
         """
         cursor.execute(query, (current_user_obj.id,))
         student_courses = cursor.fetchall()
+
+        # Lấy danh sách lịch học (calendar_events)
+        calendar_query = """
+            SELECT cs.id, cs.session_title as title, cs.session_date as date, cs.start_time, cs.end_time,
+                   cs.course_id, c.course_name, c.course_code, cs.lecturer_name, cs.location, cs.event_type,
+                   cs.quiz_id
+            FROM course_sessions cs
+            JOIN courses c ON cs.course_id = c.id
+            JOIN enrollments e ON c.id = e.course_id
+            WHERE e.student_id = %s
+            ORDER BY cs.session_date, cs.start_time
+        """
+        cursor.execute(calendar_query, (current_user_obj.id,))
+        calendar_events = cursor.fetchall()
+
+        # Lấy dữ liệu quiz cho JS
+        quiz_ids = [str(ev['quiz_id']) for ev in calendar_events if ev.get('quiz_id')]
+        quizzes_data_for_js = {}
+        if quiz_ids:
+            format_strings = ','.join(['%s'] * len(quiz_ids))
+            cursor.execute(f"SELECT * FROM quizzes WHERE id IN ({format_strings})", tuple(quiz_ids))
+            quizzes = cursor.fetchall()
+            for quiz in quizzes:
+                quizzes_data_for_js[quiz['id']] = quiz
+                # Nếu cần, lấy thêm câu hỏi quiz ở đây
+
+        # Lấy upcoming_events_dashboard (ví dụ: 2 sự kiện sắp tới)
+        upcoming_events_dashboard = [ev for ev in calendar_events if ev['date'] >= str(datetime.date.today())][:2]
+
+        # Lấy reviews và available_quizzes nếu có logic riêng
+
     except Error as e:
-        app.logger.error(f"Lỗi lấy danh sách khóa học của sinh viên {current_user_obj.id}: {e}")
-        flash("Không thể tải danh sách khóa học của bạn.", "danger")
+        app.logger.error(f"Lỗi lấy dữ liệu dashboard: {e}")
+        flash("Không thể tải dữ liệu bảng điều khiển.", "danger")
     finally:
         if cursor: cursor.close()
         if conn and conn.is_connected(): conn.close()
 
-    return render_template('index.html', courses=student_courses)
+    return render_template(
+        'index.html',
+        courses=student_courses,
+        calendar_events=calendar_events,
+        quizzes_data_for_js=quizzes_data_for_js,
+        course_sessions_data=course_sessions_data,
+        upcoming_events_dashboard=upcoming_events_dashboard,
+        reviews=reviews,
+        available_quizzes=available_quizzes
+    )
 
 
 @app.route('/student/select_session/<int:course_id>')
@@ -1117,86 +1165,69 @@ def faculty_create_quiz(course_id):
                     question_text = request.form.get(f'questions[{q_idx}][question_text]')
                     # Better logic to stop: if question_text is empty AND it's not the first potential question slot
                     # or if the key itself doesn't exist for non-first questions
-                    if not request.form.get(f'questions[{q_idx}][question_text]') and \
-                       not request.form.get(f'questions[{q_idx}][question_type]') and \
-                       q_idx > 0: # Check if any field for this question index exists
-                        break
-                    if q_idx > 20: break # Safety break for too many questions
-
-                    if not question_text: # Skip if question text is empty
-                        q_idx += 1
-                        continue
-
-                    question_type = request.form.get(f'questions[{q_idx}][question_type]')
-                    correct_answer_input = request.form.get(f'questions[{q_idx}][correct_answer]') # This is likely the index or value of correct option
+                    # If it's `question_{{question.id}}`, then key should be `question_${q_db_id}`
                     
-                    options_list = []
-                    if question_type == 'multiple_choice':
-                        for opt_inner_idx in range(4): # Assuming max 4 options based on common forms
-                            option_val = request.form.get(f'questions[{q_idx}][options][{opt_inner_idx}]')
-                            if option_val and option_val.strip():
-                                options_list.append(option_val.strip())
+                    # Corrected key based on common template structure
+                    student_answer_key_form_corrected = f"question_{q_db_id}"
+                    student_answer_value_submitted = submitted_answers_from_form.get(student_answer_key_form_corrected)
                     
-                    options_json_db = json.dumps(options_list) if options_list else None
+                    is_answer_correct = False
+                    correct_db_answer_normalized = q_data_db['correct'].strip().lower() if q_data_db['correct'] else ""
+                    student_submitted_answer_normalized = student_answer_value_submitted.strip().lower() if student_answer_value_submitted else ""
 
-                    # Validation for question data
-                    if question_text and question_type and correct_answer_input and (question_type != 'multiple_choice' or (options_list and len(options_list) >= 2)):
-                        q_insert_sql = """INSERT INTO questions (quiz_id, question_text, question_type, options, correct_answer)
-                                      VALUES (%s, %s, %s, %s, %s)"""
-                        # For MC, correct_answer should be the text of the correct option
-                        actual_correct_answer_text = ""
-                        if question_type == 'multiple_choice' and options_list:
-                            try:
-                                correct_option_index = int(correct_answer_input) # Assuming form sends index
-                                if 0 <= correct_option_index < len(options_list):
-                                    actual_correct_answer_text = options_list[correct_option_index]
-                                else: # Invalid index
-                                    flash(f"Lựa chọn đáp án đúng không hợp lệ cho câu hỏi {q_idx+1}.", "warning")
-                                    q_idx += 1
-                                    continue 
-                            except ValueError: # correct_answer_input was not an int
-                                flash(f"Định dạng đáp án đúng không hợp lệ cho câu hỏi {q_idx+1}.", "warning")
-                                q_idx += 1
-                                continue
-                        else: # For other types like 'short_answer'
-                             actual_correct_answer_text = correct_answer_input
-
-
-                        if not actual_correct_answer_text and question_type == 'multiple_choice':
-                             flash(f"Đáp án đúng không được chọn hoặc không hợp lệ cho câu hỏi trắc nghiệm {q_idx+1}.", "warning")
-                             q_idx +=1
-                             continue
-
-
-                        cursor.execute(q_insert_sql, (quiz_id_created, question_text, question_type, options_json_db, actual_correct_answer_text))
-                        any_valid_question_added = True
-                    elif question_text: # Question text exists but other parts are missing
-                        flash(f"Câu hỏi {q_idx+1} ('{question_text[:20]}...') thiếu thông tin (loại, lựa chọn hoặc đáp án đúng). Nó sẽ không được thêm.", "warning")
+                    if student_answer_value_submitted is not None and student_submitted_answer_normalized == correct_db_answer_normalized:
+                        is_answer_correct = True
+                        score_achieved_count += 1
                     
-                    q_idx += 1
-                    if q_idx > 0 and not request.form.get(f'questions[{q_idx}][question_text]') and not request.form.get(f'questions[{q_idx}][question_type]'):
-                        break # Break if next set of fields is completely empty
+                    ans_insert_sql = """
+                        INSERT INTO attempt_answers (attempt_id, question_id, student_answer, is_correct)
+                        VALUES (%s, %s, %s, %s)
+                    """
+                    cursor.execute(ans_insert_sql, (attempt_id_created, q_db_id, student_answer_value_submitted, is_answer_correct))
 
-                if not any_valid_question_added and quiz_id_created:
-                    # Decide if a quiz without questions is allowed. If not, rollback and flash.
-                    # For now, let's assume it's allowed but warn.
-                    flash("Quiz đã được tạo nhưng không có câu hỏi hợp lệ nào được thêm. Vui lòng chỉnh sửa quiz để thêm câu hỏi.", "info")
+                final_score_percentage = (score_achieved_count / total_questions_in_quiz) * 100 if total_questions_in_quiz > 0 else 0.0
+                cursor.execute("UPDATE quiz_attempts SET score = %s WHERE id = %s", (final_score_percentage, attempt_id_created))
                 
                 conn.commit()
-                flash(f"Quiz '{quiz_title}' đã được tạo/cập nhật thành công!", "success")
-                return redirect(url_for('faculty_manage_quiz', course_id=course_id))
+                flash(f"Bài quiz đã được nộp! Điểm của bạn: {score_achieved_count}/{total_questions_in_quiz} ({final_score_percentage:.2f}%)", "success")
+                return redirect(url_for('student_quiz_results', attempt_id=attempt_id_created))
 
             except Error as e:
-                app.logger.error(f"Lỗi CSDL tạo quiz/câu hỏi cho khóa {course_id}: {e}")
-                flash(f"Lỗi khi tạo quiz: {e}", "danger")
+                app.logger.error(f"Lỗi CSDL khi nộp quiz {quiz_id} cho sinh viên {current_user_obj.id}: {e}")
+                flash(f"Lỗi khi nộp bài quiz: {e}", "danger")
                 if conn and conn.is_connected(): conn.rollback()
-            except Exception as e: # Catch other errors like JSON issues or form processing
-                app.logger.error(f"Lỗi chung khi tạo quiz: {e}")
-                flash(f"Lỗi không xác định khi xử lý form tạo quiz: {e}", "danger")
+            except Exception as e: # Catch other unexpected errors during processing
+                app.logger.error(f"Lỗi không mong muốn khi nộp quiz {quiz_id} cho sinh viên {current_user_obj.id}: {e}")
+                flash(f"Lỗi không mong muốn khi nộp quiz: {e}", "danger")
                 if conn and conn.is_connected(): conn.rollback()
+            finally:
+                if cursor: cursor.close()
+                if conn and conn.is_connected(): conn.close()
+            
+            # Fallback redirect if error occurs before successful submission
+            return redirect(url_for('student_take_quiz', quiz_id=quiz_id))
+
+
+        if not any_valid_question_added and quiz_id_created:
+            # Decide if a quiz without questions is allowed. If not, rollback and flash.
+            # For now, let's assume it's allowed but warn.
+            flash("Quiz đã được tạo nhưng không có câu hỏi hợp lệ nào được thêm. Vui lòng chỉnh sửa quiz để thêm câu hỏi.", "info")
         
-        # GET request - render form for new quiz
-        return render_template('faculty_create_quiz_form.html', course=course_info_data, quiz=None, questions=[{}]) # Pass one empty question for the form
+        conn.commit()
+        flash(f"Quiz '{quiz_title}' đã được tạo/cập nhật thành công!", "success")
+        return redirect(url_for('faculty_manage_quiz', course_id=course_id))
+
+    except Error as e:
+        app.logger.error(f"Lỗi CSDL tạo quiz/câu hỏi cho khóa {course_id}: {e}")
+        flash(f"Lỗi khi tạo quiz: {e}", "danger")
+        if conn and conn.is_connected(): conn.rollback()
+    except Exception as e: # Catch other errors like JSON issues or form processing
+        app.logger.error(f"Lỗi chung khi tạo quiz: {e}")
+        flash(f"Lỗi không xác định khi xử lý form tạo quiz: {e}", "danger")
+        if conn and conn.is_connected(): conn.rollback()
+
+    # GET request - render form for new quiz
+    return render_template('faculty_create_quiz_form.html', course=course_info_data, quiz=None, questions=[{}]) # Pass one empty question for the form
 
     except Error as e: # Error during GET request processing
         app.logger.error(f"Lỗi CSDL trong faculty_create_quiz GET cho khóa {course_id}: {e}")
@@ -1310,7 +1341,7 @@ def student_submit_quiz(quiz_id):
         cursor.execute(attempt_insert_query, (quiz_id, current_user_obj.id, 0.0)) # Initial score 0
         attempt_id_created = cursor.lastrowid
 
-        submitted_answers_from_form = request.form # Renamed
+        submitted_answers_from_form = request.form
 
         for q_db_id, q_data_db in questions_map_db.items():
             student_answer_key_form = f"answers[{q_db_id}]" # Key from the form
