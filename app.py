@@ -154,12 +154,11 @@ def login():
         cursor = None
         try:
             cursor = conn.cursor(dictionary=True)
-            # QUAN TRỌNG: Sử dụng password hashing
-            query = "SELECT id, username, password_hash, role, full_name FROM users WHERE username = %s AND role = %s"
+            query = "SELECT id, username, password, role, full_name FROM users WHERE username = %s AND role = %s"
             cursor.execute(query, (username, role))
             user_data = cursor.fetchone()
 
-            if user_data and check_password_hash(user_data['password_hash'], password):
+            if user_data and user_data['password'] == password:
                 user_obj = User(user_data['id'], user_data['username'], user_data['role'], user_data.get('full_name'))
                 login_user_session(user_obj)
                 flash('Đăng nhập thành công!', 'success')

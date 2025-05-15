@@ -12,9 +12,15 @@
         .sidebar-icon { width: 24px; height: 24px; }
         .nav-link { transition: background-color 0.2s, color 0.2s; }
         .active-nav-link { background-color: #2563eb; color: white; } /* Tailwind blue-600 */
-        .nav-link:hover:not(.active-nav-link) { background-color: #eff6ff; color: #1d4ed8; } /* Tailwind blue-50, blue-700 */
+        .nav-link:hover:not(.active-nav-link) { background-color: #eff6ff; color: #1d4ed8; } /* Tailwind blue-50 and blue-700 */
         .content-section { display: none; }
         .content-section.active { display: block; }
+        
+        /* Modal Styles (nếu bạn quyết định sử dụng nó cho chi tiết sự kiện) */
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.5); }
+        .modal-content { background-color: #fefefe; margin: 5% auto; padding: 24px; border: 1px solid #888; width: 80%; max-width: 900px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .close-button { color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer; }
+        .close-button:hover, .close-button:focus { color: black; text-decoration: none; }
 
         /* Calendar Styles */
         .calendar-header { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; padding: 1rem 0; margin-bottom: 1rem; }
@@ -52,10 +58,6 @@
         .list-event-details svg { display: inline-block; width: 1em; height: 1em; margin-right: 0.35rem; vertical-align: text-bottom; }
         .no-events-message { text-align: center; color: #6b7280; padding: 2rem; font-style: italic; width: 100%;}
 
-        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.5); }
-        .modal-content { background-color: #fefefe; margin: 5% auto; padding: 24px; border: 1px solid #888; width: 80%; max-width: 900px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        .close-button { color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer; }
-        .close-button:hover, .close-button:focus { color: black; text-decoration: none; }
     </style>
 </head>
 <body class="bg-gray-100 flex">
@@ -63,18 +65,16 @@
     <aside class="w-64 bg-blue-700 text-white p-6 space-y-4 fixed h-full shadow-lg flex flex-col">
         <div class="text-center mb-8">
             <h1 class="text-2xl font-bold">UMTSmartNotes</h1>
-            {% if current_user %}
-            <p class="text-sm text-blue-200">Xin chào, {{ current_user.full_name if current_user.full_name else current_user.username }}!</p>
-            {% endif %}
+            <p class="text-sm text-blue-200">Xin chào, {{ current_user.full_name if current_user and current_user.full_name else (current_user.username if current_user else 'Sinh viên') }}!</p>
         </div>
         <nav class="flex-grow">
             <ul class="space-y-2">
                 <li><a href="#" data-target="dashboard" class="nav-link flex items-center space-x-3 p-3 rounded-lg"><svg class="sidebar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg><span>Bảng điều khiển</span></a></li>
                 <li><a href="#" data-target="detailed_schedule_section" class="nav-link flex items-center space-x-3 p-3 rounded-lg"><svg class="sidebar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg><span>Lịch học</span></a></li>
-                <li><a href="#" data-target="courses" class="nav-link flex items-center space-x-3 p-3 rounded-lg"><svg class="sidebar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v11.494m0 0a8.485 8.485 0 0011.024-6.332A8.485 8.485 0 0012 6.253zM12 6.253A8.485 8.485 0 00.976 12.585a8.485 8.485 0 0011.024 6.332z"></path></svg><span>Môn học & Ghi chú</span></a></li>
+                <li><a href="#" data-target="courses" class="nav-link flex items-center space-x-3 p-3 rounded-lg"><svg class="sidebar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25"></path></svg><span>Môn học & Ghi chú</span></a></li>
                 <li><a href="#" data-target="review" class="nav-link flex items-center space-x-3 p-3 rounded-lg"><svg class="sidebar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16 8v8m-3-5v5m-3-2v2m-2 4h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg><span>Ôn tập</span></a></li>
                 <li><a href="#" data-target="scan" class="nav-link flex items-center space-x-3 p-3 rounded-lg"><svg class="sidebar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9zM15 13a3 3 0 11-6 0 3 3 0 016 0z"></path></svg><span>Số hóa</span></a></li>
-                <li><a href="#" data-target="settings" class="nav-link flex items-center space-x-3 p-3 rounded-lg"><svg class="sidebar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0 3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065zM15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg><span>Cài đặt</span></a></li>
+                <li><a href="#" data-target="settings" class="nav-link flex items-center space-x-3 p-3 rounded-lg"><svg class="sidebar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065zM15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg><span>Cài đặt</span></a></li>
             </ul>
         </nav>
         <div class="mt-auto">
@@ -91,40 +91,36 @@
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 <div class="bg-white p-6 rounded-xl shadow-lg">
                     <h3 class="text-xl font-semibold text-gray-700 mb-2">Thông tin Sinh viên</h3>
-                    {% if current_user %}
-                    <p><strong>Tên:</strong> {{ current_user.full_name if current_user.full_name else current_user.username }}</p>
-                    <p><strong>Ngành:</strong> {{ current_user.major if current_user.major else "Chưa cập nhật" }}</p>
-                    {% else %}
-                    <p class="text-gray-500">Không có thông tin người dùng.</p>
-                    {% endif %}
+                    <p><strong>Tên:</strong> {{ current_user.full_name if current_user and current_user.full_name else (current_user.username if current_user else 'N/A') }}</p>
+                    <p><strong>Ngành:</strong> {{ current_user.major if current_user and current_user.major else 'N/A' }}</p>
                 </div>
                 <div class="bg-white p-6 rounded-xl shadow-lg">
                     <h3 class="text-xl font-semibold text-gray-700 mb-2">Lịch học sắp tới</h3>
                     {% if upcoming_events_dashboard and upcoming_events_dashboard|length > 0 %}
-                    <ul class="mt-2 space-y-2">
-                        {% for event in upcoming_events_dashboard %}
-                        <li class="text-sm text-gray-700 p-2 bg-blue-50 rounded-md">
-                            <strong>{{ event.title }}</strong> - {{ event.date | format_date_display }} ({{ event.start_time }} - {{ event.end_time }})
-                            <a href="#" data-target="detailed_schedule_section" class="nav-link text-blue-500 hover:underline text-xs block mt-1 switch-to-calendar">Xem chi tiết lịch</a>
-                        </li>
-                        {% endfor %}
-                    </ul>
+                        <ul class="mt-2 space-y-2">
+                            {% for event in upcoming_events_dashboard[:2] %} {# Display only first 2 upcoming events #}
+                                <li class="text-sm text-gray-700 p-2 bg-blue-50 rounded-md">
+                                    <strong>{{ event.title }}</strong> - {{ event.date | format_date_display }} ({{ event.start_time }} - {{ event.end_time }})
+                                    <a href="#" data-target="detailed_schedule_section" class="nav-link text-blue-500 hover:underline text-xs block mt-1 switch-to-calendar">Xem chi tiết lịch</a>
+                                </li>
+                            {% endfor %}
+                        </ul>
                     {% else %}
-                    <p class="text-sm text-gray-500">Không có lịch học nào sắp tới.</p>
+                        <p class="text-sm text-gray-500">Không có lịch học nào sắp tới.</p>
                     {% endif %}
                 </div>
                 <div class="bg-white p-6 rounded-xl shadow-lg">
                     <h3 class="text-xl font-semibold text-gray-700 mb-2">Cần ôn tập (Spaced Repetition)</h3>
                     {% if reviews and reviews|length > 0 %}
-                    <ul class="space-y-2 mt-2">
-                        {% for review_item in reviews %}
-                        <li class="p-3 bg-yellow-100 rounded-md text-yellow-800">
-                            <strong>{{ review_item.subject }}</strong>: {{ review_item.topic }} ({{ review_item.due_date | format_date_display }})
-                        </li>
-                        {% endfor %}
-                    </ul>
+                        <ul class="space-y-2 mt-2">
+                            {% for review_item in reviews[:3] %} {# Display only first 3 review items #}
+                                <li class="p-3 bg-yellow-100 rounded-md text-yellow-800">
+                                    <strong>{{ review_item.subject }}</strong>: {{ review_item.topic }} ({{ review_item.due_date | format_date_display }})
+                                </li>
+                            {% endfor %}
+                        </ul>
                     {% else %}
-                    <p class="text-gray-600">Chưa có mục nào cần ôn tập theo Spaced Repetition.</p>
+                        <p class="text-gray-600">Chưa có mục nào cần ôn tập theo Spaced Repetition.</p>
                     {% endif %}
                 </div>
             </div>
@@ -139,45 +135,49 @@
                     <button id="today-btn" class="calendar-nav ml-4">Hôm nay</button>
                 </div>
                 <div class="calendar-view-switcher">
-                    <button id="view-month-btn" data-view="month" class="active-view">Tháng</button>
+                    <button id="view-month-btn" data-view="month">Tháng</button>
                     <button id="view-week-btn" data-view="week">Tuần</button>
                     <button id="view-day-btn" data-view="day">Ngày</button>
                 </div>
             </div>
             <div id="calendar-display" class="bg-white rounded-lg shadow">
-                <p class="no-events-message p-4">Đang tải lịch...</p>
-            </div>
+                </div>
         </section>
-
+        
         <section id="courses" class="content-section">
             <h2 class="text-3xl font-semibold text-gray-800 mb-6">Môn học & Ghi chú</h2>
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {% if courses and courses|length > 0 %}
-                    {% for course_item in courses %} <div class="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow">
-                        <h3 class="text-xl font-semibold text-blue-600 mb-2">{{ course_item.course_name }}</h3>
-                        <p class="text-sm text-gray-500 mb-1">Mã môn: {{ course_item.course_code }}</p>
-                        <p class="text-sm text-gray-500 mb-3">Số tín chỉ: {{ course_item.credits }}</p>
-                        <a href="{{ url_for('student_select_session', course_id=course_item.id) }}" class="inline-block bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg">
-                            Xem Ghi chú/Chọn Buổi học
-                        </a>
-                    </div>
+                    {% for course in courses %}
+                        <div class="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow">
+                            <h3 class="text-xl font-semibold text-blue-600 mb-2">{{ course.course_name }}</h3>
+                            <p class="text-sm text-gray-500 mb-1">Mã môn: {{ course.course_code }}</p>
+                            <p class="text-sm text-gray-500 mb-3">Số tín chỉ: {{ course.credits }}</p>
+                            <a href="{{ url_for('student_select_session', course_id=course.id) }}" class="inline-block bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg">
+                                Xem Buổi học & Ghi chú
+                            </a>
+                        </div>
                     {% endfor %}
                 {% else %}
                     <p class="text-gray-500 col-span-full">Bạn chưa đăng ký môn học nào.</p>
                 {% endif %}
             </div>
         </section>
-
+        
         <section id="review" class="content-section">
             <h2 class="text-3xl font-semibold text-gray-800 mb-6">Ôn tập thông minh</h2>
+            
             <div class="mb-10 bg-white p-6 rounded-xl shadow-lg">
                 <h3 class="text-2xl font-semibold text-purple-600 mb-4">Flashcards</h3>
-                <p class="text-gray-600 mb-4">Tổ chức và ôn tập kiến thức hiệu quả với flashcards.</p>
-                <a href="{{ url_for('student_flashcard_hub_course', course_id=0) }}" class="inline-block bg-purple-500 hover:bg-purple-600 text-white font-semibold py-2.5 px-6 rounded-lg transition-colors">
+                <p class="text-gray-600 mb-4">Tổ chức và ôn tập kiến thức hiệu quả với flashcards. Tạo bộ flashcard cho từng môn học hoặc chủ đề chung.</p>
+                <a href="{{ url_for('student_flashcard_hub_course', course_id=0) }}"  {# Defaulting to a general hub or a specific course #}
+                   class="inline-block bg-purple-500 hover:bg-purple-600 text-white font-semibold py-2.5 px-6 rounded-lg transition-colors">
                     Đến trang quản lý Flashcards
                 </a>
             </div>
+
             <hr class="my-8 border-gray-300">
+
             <div class="mb-10 bg-white p-6 rounded-xl shadow-lg">
                 <h3 class="text-2xl font-semibold text-teal-600 mb-4">Các Bài Quiz có sẵn</h3>
                 {% if available_quizzes and available_quizzes|length > 0 %}
@@ -186,7 +186,11 @@
                         <li class="p-4 border border-gray-200 rounded-lg flex justify-between items-center hover:bg-gray-50 transition-colors">
                             <div>
                                 <p class="font-medium text-gray-800">{{ quiz_item.title }}</p>
-                                <p class="text-sm text-gray-500">Môn: {{ quiz_item.course_name }} - Ngày: {{ quiz_item.session_date_str | format_date_display if quiz_item.session_date_str else "Không rõ" }}</p>
+                                <p class="text-sm text-gray-500">Môn: {{ quiz_item.course_name }} 
+                                    {% if quiz_item.session_date_str %}
+                                    - Buổi học: {{ quiz_item.session_date_str | format_date_display }}
+                                    {% endif %}
+                                </p>
                             </div>
                             <a href="{{ url_for('student_take_quiz', quiz_id=quiz_item.quiz_id) }}"
                                class="bg-teal-500 hover:bg-teal-600 text-white font-semibold py-2 px-3 rounded-lg transition-colors text-sm">
@@ -199,18 +203,21 @@
                     <p class="text-gray-500">Hiện tại chưa có bài quiz nào được tạo hoặc có sẵn cho bạn.</p>
                 {% endif %}
             </div>
+            
             <hr class="my-8 border-gray-300">
+
             <div class="bg-white p-6 rounded-xl shadow-lg">
                 <h3 class="text-2xl font-semibold text-indigo-600 mb-4">Duyệt Quiz theo Môn học</h3>
                 <div id="quiz-by-course-container" class="space-y-4">
                     {% if courses and courses|length > 0 %}
-                        {% for course_quiz_item in courses %} <div class="course-quiz-item bg-gray-50 p-4 rounded-lg shadow-sm">
+                        {% for course in courses %}
+                            <div class="course-quiz-item bg-gray-50 p-4 rounded-lg shadow-sm">
                                 <button class="course-toggle-btn w-full text-left font-medium text-indigo-700 hover:text-indigo-900 flex justify-between items-center">
-                                    <span>{{ course_quiz_item.course_name }} ({{ course_quiz_item.course_code }})</span>
+                                    <span>{{ course.course_name }} ({{ course.course_code }})</span>
                                     <svg class="w-5 h-5 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5"></path></svg>
                                 </button>
                                 <div class="sessions-list hidden mt-3 pl-4 space-y-2 border-l-2 border-indigo-200">
-                                    <p class="text-sm text-gray-500 no-sessions-msg">Đang tải hoặc không có buổi học nào có quiz cho môn này.</p>
+                                    <p class="text-sm text-gray-500 no-sessions-msg">Nhấn để xem các quiz có sẵn cho môn này.</p>
                                 </div>
                             </div>
                         {% endfor %}
@@ -223,41 +230,36 @@
 
         <section id="scan" class="content-section">
             <h2 class="text-3xl font-semibold text-gray-800 mb-6">Số hóa tài liệu</h2>
-            <div class="bg-white p-6 rounded-xl shadow-lg">
-                <p class="text-gray-600">Tính năng này cho phép bạn tải lên hình ảnh hoặc PDF của tài liệu viết tay hoặc in ấn, và hệ thống sẽ cố gắng chuyển đổi chúng thành văn bản có thể tìm kiếm và chỉnh sửa (OCR).</p>
-                <p class="mt-2 text-sm text-yellow-600">Lưu ý: Tính năng đang trong giai đoạn phát triển.</p>
+            <div class="bg-white p-6 rounded-xl shadow-lg mt-4">
+                <p class="text-gray-500">Tính năng số hóa tài liệu (ví dụ: scan ghi chú tay thành văn bản) sẽ được phát triển trong tương lai.</p>
             </div>
         </section>
+        
         <section id="settings" class="content-section">
             <h2 class="text-3xl font-semibold text-gray-800 mb-6">Cài đặt</h2>
-            <div class="bg-white p-6 rounded-xl shadow-lg">
-                <p class="text-gray-600">Tùy chỉnh các thiết lập tài khoản và ứng dụng của bạn tại đây.</p>
-                <p class="mt-2 text-sm text-yellow-600">Lưu ý: Tính năng đang trong giai đoạn phát triển.</p>
+            <div class="bg-white p-6 rounded-xl shadow-lg mt-4">
+                <p class="text-gray-500">Tùy chỉnh cài đặt tài khoản và ứng dụng sẽ có ở đây.</p>
             </div>
         </section>
     </main>
 
-    <div id="event-detail-modal" class="modal">
+    <div id="event-detail-modal" class="modal" style="display:none;">
         <div class="modal-content">
             <span class="close-button" id="close-modal-button">&times;</span>
             <h3 id="modal-title" class="text-2xl font-semibold text-blue-700 mb-4">Chi tiết Buổi học</h3>
-            <div id="modal-body" class="text-gray-700">
-                <p><strong>Môn học:</strong> <span id="modal-course-name"></span></p>
-                <p><strong>Thời gian:</strong> <span id="modal-time"></span></p>
-                <p><strong>Địa điểm:</strong> <span id="modal-location"></span></p>
-                <p><strong>Giảng viên:</strong> <span id="modal-lecturer"></span></p>
-                <div id="modal-material-pane" class="mt-4 bg-gray-50 p-4 rounded-lg border">
-                    <h4 class="text-lg font-semibold text-gray-700 mb-3">Tài liệu</h4>
-                    <div id="modal-material-content" class="text-sm space-y-2">
-                        <p class="text-gray-500">Không có tài liệu cho buổi này.</p>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div id="material-pane" class="bg-gray-50 p-4 rounded-lg border">
+                    <h4 class="text-lg font-semibold text-gray-700 mb-3">Tài liệu Giảng viên</h4>
+                    <div id="material-content" class="text-sm space-y-2">
+                        <p class="text-gray-500">Đang tải tài liệu...</p>
                     </div>
                 </div>
-                <div id="modal-notes-pane" class="mt-4 bg-gray-50 p-4 rounded-lg border">
+                <div id="notes-pane" class="bg-gray-50 p-4 rounded-lg border">
                     <h4 class="text-lg font-semibold text-gray-700 mb-3">Ghi chú nhanh</h4>
-                    <textarea id="modal-quick-note-area" class="w-full h-24 p-2 border rounded-md text-sm" placeholder="Ghi chú nhanh cho buổi học này..."></textarea>
+                    <textarea id="quick-note-area" class="w-full h-32 p-2 border rounded-md text-sm" placeholder="Ghi chú nhanh..."></textarea>
                     <div class="mt-3 flex justify-between items-center">
-                        <button id="modal-save-quick-note" class="bg-green-500 hover:bg-green-600 text-white text-sm py-2 px-3 rounded-lg">Lưu Ghi chú nhanh</button>
-                        <a id="modal-full-notes-link" href="#" target="_blank" class="text-blue-500 hover:text-blue-700 text-sm">Mở Ghi chú đầy đủ</a>
+                        <button id="save-quick-note" class="bg-green-500 hover:bg-green-600 text-white text-sm py-2 px-3 rounded-lg">Lưu</button>
+                        <a id="full-notes-link" href="#" target="_blank" class="text-blue-500 hover:text-blue-700 text-sm">Mở ghi chú đầy đủ</a>
                     </div>
                 </div>
             </div>
@@ -266,6 +268,8 @@
 
     <script id="calendar-data" type="application/json">{{ calendar_events | tojson | safe if calendar_events else '[]' }}</script>
     <script id="quizzes-data-script" type="application/json">{{ quizzes_data_for_js | tojson | safe if quizzes_data_for_js else '{}' }}</script>
+    <script id="course-sessions-data" type="application/json">{{ course_sessions_data | tojson | safe if course_sessions_data else '{}' }}</script>
+
 
     <script>
         // --- Helper Functions ---
@@ -274,57 +278,84 @@
         function getFormattedDate(date, locale = 'vi-VN') { return date.toLocaleDateString(locale, { day: '2-digit', month: '2-digit', year: 'numeric' });}
 
         document.addEventListener('DOMContentLoaded', function () {
-            const navLinks = document.querySelectorAll('.nav-link');
-            const contentSections = document.querySelectorAll('.content-section');
-            let currentView = 'month';
-            let currentDate = new Date();
+            const navLinks = document.querySelectorAll('aside .nav-link'); // Target only sidebar links for main navigation
+            const contentSections = document.querySelectorAll('main .content-section');
+            let currentView = 'month'; 
+            let currentDate = new Date(); 
 
+            // --- Navigation Logic ---
             function switchSection(targetId) {
-                console.log(`[Nav] Switching to section: ${targetId}`);
+                console.log(`[Nav] Attempting to switch to section: ${targetId}`);
+                
+                // Deactivate all sidebar nav links
                 navLinks.forEach(nav => {
                     if (nav.getAttribute('href') !== "{{ url_for('logout') }}") {
                         nav.classList.remove('active-nav-link');
                     }
                 });
+
+                // Deactivate all content sections
                 contentSections.forEach(section => {
                     section.classList.remove('active');
+                     console.log(`[Nav] Deactivated section: ${section.id}`);
                 });
-                const clickedLink = document.querySelector(`.nav-link[data-target="${targetId}"]`);
-                if (clickedLink) clickedLink.classList.add('active-nav-link');
+
+                // Activate the target sidebar nav link
+                const activeSidebarLink = document.querySelector(`aside .nav-link[data-target="${targetId}"]`);
+                if (activeSidebarLink) {
+                    activeSidebarLink.classList.add('active-nav-link');
+                    console.log(`[Nav] Activated sidebar link for: ${targetId}`);
+                } else {
+                    console.warn(`[Nav] No sidebar link found with data-target: ${targetId}`);
+                }
+                
+                // Activate the target content section
                 const targetSection = document.getElementById(targetId);
                 if (targetSection) {
                     targetSection.classList.add('active');
+                    console.log(`[Nav] Activated content section: ${targetId}`);
+                    // If switching to the calendar section, initialize/render it
                     if (targetId === 'detailed_schedule_section') {
+                        console.log("[Nav] Initializing calendar for detailed_schedule_section.");
                         currentDate = new Date(); 
                         currentView = 'month'; 
-                        updateActiveViewButton(currentView);
-                        renderCalendar(); 
+                        updateActiveViewButton(currentView); 
+                        renderCalendar();           
                     }
+                } else {
+                    console.warn(`[Nav] Content section with ID: '${targetId}' NOT FOUND.`);
                 }
             }
-            const initialTarget = 'dashboard'; 
-            switchSection(initialTarget);
-            const initialActiveLink = document.querySelector(`.nav-link[data-target="${initialTarget}"]`);
-            if (initialActiveLink) initialActiveLink.classList.add('active-nav-link');
+            
+            // Set initial active section
+            switchSection('dashboard'); 
 
+            // Add event listeners to sidebar navigation links
             navLinks.forEach(link => {
-                if (link.getAttribute('href') === "{{ url_for('logout') }}") return; 
+                if (link.getAttribute('href') === "{{ url_for('logout') }}") return; // Skip logout link
+
                 if (link.dataset.target) {
                     link.addEventListener('click', function (event) {
-                        event.preventDefault();
-                        switchSection(this.dataset.target);
-                    });
-                }
-            });
-            document.querySelectorAll('.switch-to-calendar').forEach(link => {
-                 if (link.dataset.target && link.dataset.target === 'detailed_schedule_section') { 
-                    link.addEventListener('click', function(event) {
-                        event.preventDefault();
+                        event.preventDefault(); 
+                        console.log("[Nav] Sidebar link clicked! Target:", this.dataset.target);
                         switchSection(this.dataset.target);
                     });
                 }
             });
 
+            // Handle specific links within content that should switch to the calendar section
+            document.querySelectorAll('.switch-to-calendar').forEach(link => {
+                 if (link.dataset.target && link.dataset.target === 'detailed_schedule_section') {
+                    link.addEventListener('click', function(event) {
+                        event.preventDefault();
+                        console.log("[Nav] 'Switch-to-calendar' link clicked! Target:", this.dataset.target);
+                        switchSection(this.dataset.target);
+                    });
+                }
+            });
+
+
+            // --- Calendar Logic ---
             const calendarDisplay = document.getElementById('calendar-display');
             const currentMonthYearDisplay = document.getElementById('current-month-year');
             const prevBtn = document.getElementById('prev-btn');
@@ -333,108 +364,384 @@
             const viewMonthBtn = document.getElementById('view-month-btn');
             const viewWeekBtn = document.getElementById('view-week-btn');
             const viewDayBtn = document.getElementById('view-day-btn');
+            
             let calendarEvents = [];
             try {
                 const calendarDataElement = document.getElementById('calendar-data');
-                if (calendarDataElement) calendarEvents = JSON.parse(calendarDataElement.textContent || '[]');
-            } catch (e) { console.error("Lỗi phân tích dữ liệu lịch:", e); }
+                if (calendarDataElement) {
+                    calendarEvents = JSON.parse(calendarDataElement.textContent || '[]');
+                } else {
+                    console.warn("Calendar data script tag not found.");
+                }
+            } catch (e) { console.error("Lỗi phân tích dữ liệu lịch:", e); calendarEvents = []; }
+            
             let quizzes_data_js = {};
             try {
                 const quizzesDataElement = document.getElementById('quizzes-data-script');
-                if (quizzesDataElement) quizzes_data_js = JSON.parse(quizzesDataElement.textContent || '{}');
-            } catch (e) { console.error("Lỗi phân tích dữ liệu quizzes:", e); }
+                if (quizzesDataElement) {
+                    quizzes_data_js = JSON.parse(quizzesDataElement.textContent || '{}');
+                } else {
+                     console.warn("Quizzes data script tag not found.");
+                }
+            } catch (e) { console.error("Lỗi phân tích dữ liệu quizzes:", e); quizzes_data_js = {}; }
 
-            function updateCalendarHeader() { /* ... (giữ nguyên) ... */ }
-            function renderCalendar() { /* ... (giữ nguyên, đảm bảo kiểm tra 'calendarEvents' trước khi dùng) ... */ }
-            function updateActiveViewButton(activeView) { /* ... (giữ nguyên) ... */ }
-            function renderMonthView(year, month) { /* ... (giữ nguyên, đảm bảo kiểm tra 'calendarEvents') ... */ }
-            function renderWeekView(dateForWeek) { /* ... (giữ nguyên, đảm bảo kiểm tra 'calendarEvents') ... */ }
-            function renderDayListView(dateForDay) { /* ... (giữ nguyên, đảm bảo kiểm tra 'calendarEvents') ... */ }
+            // let courseSessionsData = {}; // Not directly used in this version of calendar rendering
+            //  try {
+            //     const courseSessionsDataElement = document.getElementById('course-sessions-data');
+            //     if (courseSessionsDataElement) {
+            //         courseSessionsData = JSON.parse(courseSessionsDataElement.textContent || '{}');
+            //     } else {
+            //          console.warn("Course sessions data script tag not found.");
+            //     }
+            // } catch (e) { console.error("Lỗi phân tích dữ liệu course sessions:", e); courseSessionsData = {}; }
+
+
+            console.log("Initial Calendar Events Count:", calendarEvents.length);
+            console.log("Initial Quizzes Data Keys Count:", Object.keys(quizzes_data_js).length);
+            // console.log("Initial Course Sessions Data Keys Count:", Object.keys(courseSessionsData).length);
+
+
+            function updateCalendarHeader() {
+                if (!currentMonthYearDisplay) return; 
+                if (currentView === 'month') {
+                    currentMonthYearDisplay.textContent = `${getMonthName(currentDate)} ${currentDate.getFullYear()}`;
+                } else if (currentView === 'week') {
+                    const startOfWeek = new Date(currentDate);
+                    startOfWeek.setDate(currentDate.getDate() - currentDate.getDay() + (currentDate.getDay() === 0 ? -6 : 1)); 
+                    const endOfWeek = new Date(startOfWeek);
+                    endOfWeek.setDate(startOfWeek.getDate() + 6);
+                    currentMonthYearDisplay.textContent = `${getFormattedDate(startOfWeek)} - ${getFormattedDate(endOfWeek)}`;
+                } else if (currentView === 'day') {
+                    currentMonthYearDisplay.textContent = `${getDayName(currentDate)}, ${getFormattedDate(currentDate)}`;
+                }
+                 console.log("[Header Update] View:", currentView, "Date:", currentDate.toLocaleDateString());
+            }
             
-            // Cập nhật renderMonthView, renderWeekView, renderDayListView để xử lý trường hợp calendarEvents rỗng
             function renderCalendar() {
-                if (!calendarDisplay) return;
+                if (!calendarDisplay) {
+                    console.error("Lỗi: Không tìm thấy #calendar-display.");
+                    return; 
+                }
                 updateCalendarHeader();
-                calendarDisplay.innerHTML = '';
+                calendarDisplay.innerHTML = ''; 
+                console.log(`[Render] View: ${currentView}, Date: ${currentDate.toLocaleDateString()}, Events Count: ${calendarEvents.length}`);
+                
                 if (!calendarEvents || calendarEvents.length === 0) {
-                    calendarDisplay.innerHTML = '<p class="no-events-message p-4">Không có sự kiện nào để hiển thị.</p>';
+                    calendarDisplay.innerHTML = '<p class="no-events-message p-4 text-center text-gray-500">Không có dữ liệu lịch để hiển thị.</p>';
+                    console.log("[Render] No calendar data available.");
                     return;
                 }
+
                 if (currentView === 'month') renderMonthView(currentDate.getFullYear(), currentDate.getMonth());
                 else if (currentView === 'week') renderWeekView(currentDate);
                 else if (currentView === 'day') renderDayListView(currentDate);
+                else { 
+                    calendarDisplay.innerHTML = '<p class="no-events-message p-4 text-center text-red-500">Lỗi: Chế độ xem không hợp lệ.</p>';
+                    console.error("[Render] Invalid calendar view:", currentView);
+                }
             }
+            
+            function updateActiveViewButton(activeView) {
+                [viewMonthBtn, viewWeekBtn, viewDayBtn].forEach(btn => {
+                    if(btn) btn.classList.toggle('active-view', btn.dataset.view === activeView);
+                });
+                currentView = activeView; 
+                console.log("[View Change] Active view set to:", activeView);
+            }
+            
             function renderMonthView(year, month) {
-                // ... (phần đầu giữ nguyên) ...
-                let hasEventsThisMonth = false;
-                calendarEvents.forEach(event => { // Kiểm tra sự kiện trong tháng hiện tại
-                    const eventDate = new Date(event.date + "T00:00:00");
-                    if (eventDate.getFullYear() === year && eventDate.getMonth() === month) {
-                        hasEventsThisMonth = true;
-                    }
+                console.log(`[MonthView] Rendering for ${year}-${String(month + 1).padStart(2, '0')}`);
+                if (!calendarDisplay) { console.error("[MonthView] calendarDisplay not found"); return; }
+                calendarDisplay.innerHTML = ''; 
+                calendarDisplay.className = 'calendar-grid-month'; 
+                
+                const daysOfWeek = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7']; 
+                daysOfWeek.forEach(day => {
+                    const dayHeader = document.createElement('div');
+                    dayHeader.className = 'calendar-day-header'; dayHeader.textContent = day;
+                    calendarDisplay.appendChild(dayHeader);
                 });
 
-                // ... (phần render các ô ngày giữ nguyên, sử dụng dayEvents như cũ) ...
-                // Thêm hiển thị "Không có sự kiện" nếu hasEventsThisMonth là false sau khi duyệt hết các ô
-                if (!hasEventsThisMonth && calendarDisplay.querySelectorAll('.calendar-event-item-month').length === 0) {
-                     calendarDisplay.innerHTML = '<p class="no-events-message col-span-7 p-4">Không có sự kiện nào cho tháng này.</p>';
+                const firstDayOfMonth = new Date(year, month, 1);
+                const lastDayOfMonth = new Date(year, month + 1, 0); 
+                const daysInMonth = lastDayOfMonth.getDate(); 
+                const startDayOfWeek = firstDayOfMonth.getDay(); 
+                
+                let hasEventsThisMonth = false;
+
+                for (let i = 0; i < startDayOfWeek; i++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'calendar-day-cell other-month'; 
+                    calendarDisplay.appendChild(cell);
                 }
-            }
-             function renderWeekView(dateForWeek) {
-                // ... (phần đầu giữ nguyên) ...
-                let hasEventsThisWeek = false;
-                // ... (logic tính startOfWeek) ...
-                for (let i = 0; i < 7; i++) {
-                    // ... (logic render cột) ...
+
+                for (let day = 1; day <= daysInMonth; day++) {
+                    const cell = document.createElement('div'); 
+                    cell.className = 'calendar-day-cell';
+                    const dayNumber = document.createElement('div'); 
+                    dayNumber.className = 'day-number'; 
+                    dayNumber.textContent = day;
+                    cell.appendChild(dayNumber);
+
+                    const currentDateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
                     const dayEvents = calendarEvents.filter(event => event.date === currentDateStr);
-                    if (dayEvents.length > 0) hasEventsThisWeek = true;
-                    // ... (render event items) ...
+                    
+                    if (dayEvents.length > 0) {
+                        hasEventsThisMonth = true;
+                        dayEvents.forEach(event => {
+                            const eventEl = document.createElement('div');
+                            eventEl.className = 'calendar-event-item-month';
+                            eventEl.textContent = `${event.start_time} ${event.title}`; 
+                            eventEl.title = `${event.start_time} - ${event.end_time}: ${event.title}`; 
+                            
+                            eventEl.addEventListener('click', () => {
+                                if (event.course_id && event.id) { 
+                                     window.location.href = `/student/select_session/${event.course_id}`; 
+                                } else {
+                                    console.error("Missing course_id or session_id for event:", event);
+                                }
+                            }); 
+                            cell.appendChild(eventEl);
+
+                            if (event.quiz_id && quizzes_data_js[event.quiz_id] && quizzes_data_js[event.quiz_id].questions && quizzes_data_js[event.quiz_id].questions.length > 0) {
+                                const quizLink = document.createElement('a');
+                                quizLink.href = `/student/take_quiz/${event.quiz_id}`;
+                                quizLink.innerHTML = `<svg class="inline-block w-3 h-3 mr-1 align-middle" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5.25h.008v.008H12v-.008z"></path></svg>Quiz`;
+                                quizLink.className = 'quiz-link-calendar block text-xs text-purple-600 hover:underline mt-1';
+                                quizLink.target = "_blank"; 
+                                quizLink.addEventListener('click', (e) => e.stopPropagation()); 
+                                cell.appendChild(quizLink);
+                            }
+                        });
+                    }
+                    calendarDisplay.appendChild(cell);
+                }
+
+                const totalCells = startDayOfWeek + daysInMonth;
+                const remainingCells = (7 - (totalCells % 7)) % 7; 
+                for (let i = 0; i < remainingCells; i++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'calendar-day-cell other-month'; 
+                    calendarDisplay.appendChild(cell);
+                }
+
+                if (!hasEventsThisMonth && calendarEvents.length > 0) {
+                    let eventItemsCount = calendarDisplay.querySelectorAll('.calendar-event-item-month').length;
+                    if(eventItemsCount === 0) { 
+                        calendarDisplay.innerHTML = '<p class="no-events-message col-span-7 p-4 text-center text-gray-500">Không có sự kiện nào cho tháng này.</p>';
+                    }
+                }
+                 console.log("[MonthView] Render complete.");
+            }
+            
+            function renderWeekView(dateForWeek) {
+                console.log("[WeekView] Rendering for week of:", dateForWeek.toLocaleDateString());
+                if (!calendarDisplay) return;
+                calendarDisplay.innerHTML = ''; 
+                calendarDisplay.className = 'calendar-grid-week';
+                const daysOfWeek = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN']; 
+                const startOfWeek = new Date(dateForWeek);
+                startOfWeek.setDate(dateForWeek.getDate() - dateForWeek.getDay() + (dateForWeek.getDay() === 0 ? -6 : 1)); 
+                
+                let hasEventsThisWeek = false;
+
+                for (let i = 0; i < 7; i++) {
+                    const dayColumn = document.createElement('div');
+                    dayColumn.className = 'week-day-column';
+                    const currentDayInWeek = new Date(startOfWeek);
+                    currentDayInWeek.setDate(startOfWeek.getDate() + i);
+
+                    const dayHeader = document.createElement('div');
+                    dayHeader.className = 'week-day-header';
+                    dayHeader.innerHTML = `${daysOfWeek[i]} <span class="text-xs text-gray-500">${currentDayInWeek.getDate()}/${currentDayInWeek.getMonth()+1}</span>`;
+                    dayColumn.appendChild(dayHeader);
+
+                    const currentDateStr = `${currentDayInWeek.getFullYear()}-${String(currentDayInWeek.getMonth() + 1).padStart(2, '0')}-${String(currentDayInWeek.getDate()).padStart(2, '0')}`;
+                    const dayEvents = calendarEvents.filter(event => event.date === currentDateStr).sort((a,b) => a.start_time.localeCompare(b.start_time));
+                    
+                    if (dayEvents.length > 0) {
+                        hasEventsThisWeek = true;
+                        dayEvents.forEach(event => {
+                            const eventEl = document.createElement('div');
+                            eventEl.className = 'week-event-item';
+                            eventEl.innerHTML = `<div class="week-event-time">${event.start_time} - ${event.end_time}</div><div class="week-event-title">${event.title}</div>`;
+                            eventEl.addEventListener('click', () => {
+                                if (event.course_id && event.id) {
+                                     window.location.href = `/student/select_session/${event.course_id}`;
+                                } else {
+                                    console.error("Missing course_id or session_id for event:", event);
+                                }
+                            });
+                            dayColumn.appendChild(eventEl);
+
+                            if (event.quiz_id && quizzes_data_js[event.quiz_id] && quizzes_data_js[event.quiz_id].questions.length > 0) {
+                                const quizLink = document.createElement('a');
+                                quizLink.href = `/student/take_quiz/${event.quiz_id}`;
+                                quizLink.innerHTML = `<svg class="inline-block w-3 h-3 mr-1 align-middle" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5.25h.008v.008H12v-.008z"></path></svg>Quiz`;
+                                quizLink.className = 'quiz-link-calendar block text-xs text-purple-600 hover:underline mt-1';
+                                quizLink.target = "_blank";
+                                quizLink.addEventListener('click', (e) => e.stopPropagation());
+                                dayColumn.appendChild(quizLink);
+                            }
+                        });
+                    }
+                    calendarDisplay.appendChild(dayColumn);
                 }
                 if (!hasEventsThisWeek && calendarEvents.length > 0) {
-                     calendarDisplay.innerHTML = '<p class="no-events-message col-span-7 p-4">Không có sự kiện nào cho tuần này.</p>';
+                     calendarDisplay.innerHTML = '<p class="no-events-message col-span-7 p-4 text-center text-gray-500">Không có sự kiện nào cho tuần này.</p>';
                 }
+                console.log("[WeekView] Render complete.");
             }
-             function renderDayListView(dateForDay) {
-                // ... (phần đầu giữ nguyên) ...
-                const dayEvents = calendarEvents.filter(event => event.date === currentDateStr);
+
+            function renderDayListView(dateForDay) {
+                console.log("[DayView] Rendering for date:", dateForDay.toLocaleDateString());
+                if (!calendarDisplay) return;
+                calendarDisplay.innerHTML = ''; 
+                calendarDisplay.className = 'calendar-list-day'; 
+
+                const currentDateStr = `${dateForDay.getFullYear()}-${String(dateForDay.getMonth() + 1).padStart(2, '0')}-${String(dateForDay.getDate()).padStart(2, '0')}`;
+                const dayEvents = calendarEvents.filter(event => event.date === currentDateStr).sort((a,b) => a.start_time.localeCompare(b.start_time));
+
                 if (dayEvents.length === 0) {
-                    calendarDisplay.innerHTML = '<p class="no-events-message p-4">Không có sự kiện nào cho ngày này.</p>';
+                    calendarDisplay.innerHTML = '<p class="no-events-message p-4 text-center text-gray-500">Không có sự kiện nào cho ngày này.</p>';
                     return;
                 }
-                // ... (render event items) ...
+
+                const listContainer = document.createElement('div'); 
+                listContainer.className = "space-y-3"; 
+
+                dayEvents.forEach(event => {
+                    const eventEl = document.createElement('div');
+                    eventEl.className = 'list-event-item';
+                    eventEl.innerHTML = `
+                        <div class="list-event-time">${event.start_time} - ${event.end_time}</div>
+                        <div class="list-event-title">${event.title}</div>
+                        <div class="list-event-details">
+                            ${event.course_code ? `<span><svg class="inline-block" fill="none" stroke="currentColor" viewBox="0 0 24 24" width="16" height="16"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v11.494m0 0a8.485 8.485 0 0011.024-6.332A8.485 8.485 0 0012 6.253zM12 6.253A8.485 8.485 0 00.976 12.585a8.485 8.485 0 0011.024 6.332z"></path></svg> ${event.course_name} (${event.course_code})</span>` : (event.course_name ? `<span><svg class="inline-block" fill="none" stroke="currentColor" viewBox="0 0 24 24" width="16" height="16"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v11.494m0 0a8.485 8.485 0 0011.024-6.332A8.485 8.485 0 0012 6.253zM12 6.253A8.485 8.485 0 00.976 12.585a8.485 8.485 0 0011.024 6.332z"></path></svg> ${event.course_name}</span>` : '')}
+                            ${event.event_type ? `<span><svg class="inline-block" fill="none" stroke="currentColor" viewBox="0 0 24 24" width="16" height="16"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"></path></svg> ${event.event_type}</span>` : ''}
+                            ${event.lecturer_name ? `<span><svg class="inline-block" fill="none" stroke="currentColor" viewBox="0 0 24 24" width="16" height="16"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"></path></svg> ${event.lecturer_name}</span>` : ''}
+                            ${event.location ? `<span><svg class="inline-block" fill="none" stroke="currentColor" viewBox="0 0 24 24" width="16" height="16"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z"></path></svg> ${event.location}</span>` : ''}
+                        </div>
+                        ${event.quiz_id && quizzes_data_js[event.quiz_id] && quizzes_data_js[event.quiz_id].questions.length > 0 ? 
+                            `<a href="/student/take_quiz/${event.quiz_id}" target="_blank" class="mt-2 inline-block bg-purple-500 hover:bg-purple-600 text-white text-xs font-medium py-1.5 px-3 rounded-md">
+                                <svg class="inline-block w-4 h-4 mr-1 align-middle" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5.25h.008v.008H12v-.008z"></path></svg>
+                                Làm Quiz
+                            </a>` : ''}
+                    `;
+                    eventEl.addEventListener('click', (e) => {
+                        if (e.target.tagName !== 'A' && !e.target.closest('a')) {
+                             if (event.course_id && event.id) {
+                                 window.location.href = `/student/select_session/${event.course_id}`;
+                             } else {
+                                console.error("Missing course_id or session_id for event:", event);
+                            }
+                        }
+                    });
+                    listContainer.appendChild(eventEl);
+                });
+                calendarDisplay.appendChild(listContainer);
+                console.log("[DayView] Render complete.");
             }
 
-
-            prevBtn?.addEventListener('click', () => { /* ... (giữ nguyên) ... */ });
-            nextBtn?.addEventListener('click', () => { /* ... (giữ nguyên) ... */ });
-            todayBtn?.addEventListener('click', () => { /* ... (giữ nguyên) ... */ });
+            // Event Listeners for Calendar Navigation
+            prevBtn?.addEventListener('click', () => { currentDate = new Date(currentDate); if (currentView === 'month') currentDate.setMonth(currentDate.getMonth() - 1); else if (currentView === 'week') currentDate.setDate(currentDate.getDate() - 7); else if (currentView === 'day') currentDate.setDate(currentDate.getDate() - 1); renderCalendar(); });
+            nextBtn?.addEventListener('click', () => { currentDate = new Date(currentDate); if (currentView === 'month') currentDate.setMonth(currentDate.getMonth() + 1); else if (currentView === 'week') currentDate.setDate(currentDate.getDate() + 7); else if (currentView === 'day') currentDate.setDate(currentDate.getDate() + 1); renderCalendar(); });
+            todayBtn?.addEventListener('click', () => { currentDate = new Date(); renderCalendar(); });
+            
             [viewMonthBtn, viewWeekBtn, viewDayBtn].forEach(btn => {
-                if(btn) btn.addEventListener('click', function() { /* ... (giữ nguyên) ... */ });
+                if(btn) btn.addEventListener('click', function() { 
+                    console.log("[Calendar] View button clicked:", this.dataset.view);
+                    updateActiveViewButton(this.dataset.view); 
+                    renderCalendar(); 
+                });
             });
-
-            const eventModal = document.getElementById('event-detail-modal');
-            const closeModalBtn = document.getElementById('close-modal-button');
-            const modalTitle = document.getElementById('modal-title');
-            const modalCourseName = document.getElementById('modal-course-name');
-            const modalTime = document.getElementById('modal-time');
-            const modalLocation = document.getElementById('modal-location');
-            const modalLecturer = document.getElementById('modal-lecturer');
-            const modalMaterialContent = document.getElementById('modal-material-content');
-            const modalQuickNoteArea = document.getElementById('modal-quick-note-area');
-            const modalSaveQuickNoteBtn = document.getElementById('modal-save-quick-note');
-            const modalFullNotesLink = document.getElementById('modal-full-notes-link');
-            let currentEventInModal = null;
-            function showEventModal(eventData) { /* ... (giữ nguyên) ... */ }
-            closeModalBtn?.addEventListener('click', () => { /* ... (giữ nguyên) ... */ });
-            window.addEventListener('click', (event) => { /* ... (giữ nguyên) ... */ });
-            modalSaveQuickNoteBtn?.addEventListener('click', () => { /* ... (giữ nguyên) ... */ });
-
+            
+            // --- Quiz by Course/Session Logic ---
             const courseQuizItems = document.querySelectorAll('.course-quiz-item');
-            courseQuizItems.forEach(item => { /* ... (giữ nguyên) ... */ });
-            function flash(message, category = 'info', duration = 3000) { /* ... (giữ nguyên) ... */ }
+            const coursesDataFromFlask = JSON.parse('{{ courses| tojson | safe if courses else "[]" }}');
+
+            courseQuizItems.forEach(item => {
+                const toggleBtn = item.querySelector('.course-toggle-btn');
+                const sessionsListDiv = item.querySelector('.sessions-list');
+                const courseNameAndCodeText = toggleBtn.querySelector('span').textContent.trim(); // "Course Name (COURSE_CODE)"
+                const courseCodeMatch = courseNameAndCodeText.match(/\(([^)]+)\)$/); 
+                
+                if (!courseCodeMatch || courseCodeMatch.length < 2) {
+                    console.error("Không thể trích xuất mã khóa học từ:", courseNameAndCodeText);
+                    return;
+                }
+                const courseCode = courseCodeMatch[1]; 
+
+                toggleBtn.addEventListener('click', () => {
+                    const isHidden = sessionsListDiv.classList.toggle('hidden');
+                    toggleBtn.querySelector('svg').classList.toggle('rotate-180', !isHidden);
+
+                    if (!isHidden && sessionsListDiv.querySelectorAll('a, p.text-gray-500').length <=1 ) { 
+                        sessionsListDiv.innerHTML = '<p class="text-sm text-gray-500 p-2">Đang tải danh sách quiz...</p>'; 
+                        
+                        let sessionsFoundWithQuiz = false;
+                        const currentCourseData = coursesDataFromFlask.find(c => c.course_code === courseCode);
+                        
+                        if (!currentCourseData) {
+                            sessionsListDiv.innerHTML = '<p class="text-sm text-red-500 p-2">Lỗi: Không tìm thấy thông tin môn học cho mã ' + courseCode + '.</p>';
+                            console.error("Course data not found for code:", courseCode, "Available codes:", coursesDataFromFlask.map(c=>c.course_code));
+                            return;
+                        }
+                        const targetCourseId = currentCourseData.id.toString(); 
+
+                        const courseSessionsWithQuiz = calendarEvents.filter(event => 
+                            event.course_id && event.course_id.toString() === targetCourseId &&
+                            event.quiz_id && 
+                            quizzes_data_js[event.quiz_id] && 
+                            quizzes_data_js[event.quiz_id].questions &&
+                            quizzes_data_js[event.quiz_id].questions.length > 0
+                        );
+                        
+                        courseSessionsWithQuiz.sort((a,b) => new Date(a.date + 'T' + a.start_time) - new Date(b.date + 'T' + b.start_time)); 
+
+                        if (courseSessionsWithQuiz.length > 0) {
+                            sessionsListDiv.innerHTML = ''; 
+                            courseSessionsWithQuiz.forEach(session => {
+                                const sessionLink = document.createElement('a');
+                                sessionLink.href = `/student/take_quiz/${session.quiz_id}`;
+                                sessionLink.className = 'block p-2 hover:bg-indigo-100 rounded-md text-sm text-indigo-700 transition-colors';
+                                sessionLink.textContent = `${session.title} (Ngày: ${getFormattedDate(new Date(session.date + 'T00:00:00'))}) - Quiz: ${quizzes_data_js[session.quiz_id].title || 'Không tiêu đề'}`;
+                                sessionLink.target = "_blank";
+                                sessionsListDiv.appendChild(sessionLink);
+                                sessionsFoundWithQuiz = true;
+                            });
+                        }
+                        
+                        if (!sessionsFoundWithQuiz) {
+                            sessionsListDiv.innerHTML = '<p class="text-sm text-gray-500 p-2">Không có buổi học nào có quiz cho môn này.</p>';
+                        }
+                    }
+                });
+            });
+            
+            // Simple flash message function
+            function flash(message, category = 'info') {
+                const mainArea = document.querySelector('main'); 
+                if (mainArea) {
+                    const alertContainer = document.createElement('div');
+                    alertContainer.style.position = 'fixed';
+                    alertContainer.style.top = '1rem'; 
+                    alertContainer.style.right = '1rem'; 
+                    alertContainer.style.zIndex = '9999';
+                    const alertDiv = document.createElement('div');
+                    alertDiv.className = `p-4 mb-4 text-sm rounded-lg shadow-lg 
+                        ${category === 'success' ? 'bg-green-100 text-green-700 border border-green-300' : 
+                        (category === 'danger' ? 'bg-red-100 text-red-700 border border-red-300' : 
+                        'bg-blue-100 text-blue-700 border border-blue-300')}`;
+                    alertDiv.textContent = message;
+                    alertContainer.appendChild(alertDiv);
+                    document.body.appendChild(alertContainer); 
+                    setTimeout(() => alertContainer.remove(), 3000);
+                } else {
+                    alert(message); 
+                }
+            }
         });
     </script>
 </body>
 </html>
-
-
