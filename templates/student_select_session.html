@@ -3,79 +3,144 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chọn Buổi học cho Flashcards: {{ course.name }}</title>
+    <title>Chọn Buổi học cho {{ 'Flashcards' if 'flashcard' in action_type else 'Ghi chú' }}: {{ course.course_name if course else 'Môn học' }}</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/heroicons/2.0.18/24/outline/heroicons.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Inter', sans-serif; }
         .session-select-item {
-            display: block;
-            padding: 0.75rem 1.25rem;
+            display: flex; /* Sử dụng flex để căn chỉnh các mục con */
+            justify-content: space-between; /* Đẩy các mục con ra hai bên */
+            align-items: center; /* Căn giữa theo chiều dọc */
+            padding: 1rem 1.25rem; /* Tăng padding */
             background-color: white;
-            border: 1px solid #e5e7eb; /* gray-200 */
+            border: 1px solid #e5e7eb; /* Tailwind gray-200 */
             border-radius: 0.5rem; /* rounded-lg */
             margin-bottom: 0.75rem;
             transition: background-color 0.2s, box-shadow 0.2s;
-            color: #4b5563; /* gray-600 */
             text-decoration: none;
         }
         .session-select-item:hover {
-            background-color: #f3f4f6; /* gray-100 */
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            background-color: #f3f4f6; /* Tailwind gray-100 */
+            box-shadow: 0 4px 8px rgba(0,0,0,0.07); /* Tăng shadow khi hover */
         }
-        .session-title { font-weight: 500; color: #1f2937; }
-        .session-date { font-size: 0.875rem; }
+        .session-info-container { /* Container cho thông tin buổi học */
+            flex-grow: 1;
+        }
+        .session-title {
+            font-weight: 600; /* semibold */
+            color: #1f2937; /* Tailwind gray-800 */
+            font-size: 1.125rem; /* text-lg */
+        }
+        .session-date {
+            font-size: 0.875rem; /* text-sm */
+            color: #4b5563; /* Tailwind gray-600 */
+        }
+        .action-links-container { /* Container cho các nút hành động */
+            display: flex;
+            gap: 0.75rem; /* Khoảng cách giữa các nút */
+            margin-left: 1rem; /* Khoảng cách với thông tin buổi học */
+        }
+        .action-btn {
+            padding: 0.5rem 1rem;
+            border-radius: 0.375rem; /* rounded-md */
+            font-size: 0.875rem; /* text-sm */
+            font-weight: 500; /* medium */
+            transition: background-color 0.2s;
+            display: inline-flex;
+            align-items: center;
+            text-decoration: none;
+        }
+        .action-btn-notes {
+            background-color: #3b82f6; /* Tailwind blue-500 */
+            color: white;
+        }
+        .action-btn-notes:hover {
+            background-color: #2563eb; /* Tailwind blue-600 */
+        }
+        .action-btn-flashcards {
+            background-color: #8b5cf6; /* Tailwind purple-500 */
+            color: white;
+        }
+        .action-btn-flashcards:hover {
+            background-color: #7c3aed; /* Tailwind purple-600 */
+        }
+        .action-btn svg {
+            width: 1rem; /* w-4 */
+            height: 1rem; /* h-4 */
+            margin-right: 0.5rem; /* mr-2 */
+        }
     </style>
 </head>
 <body class="bg-gray-100">
-    <div class="container mx-auto p-6 md:p-8 max-w-2xl">
+    <div class="container mx-auto p-6 md:p-8 max-w-3xl">
         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 pb-4 border-b border-gray-300">
             <div>
                 <h1 class="text-2xl md:text-3xl font-bold text-gray-800">
-                    Chọn Buổi học để {{ 'Tạo' if action_type == 'create' else 'Xem' }} Flashcards
+                    Chọn Buổi học của môn {{ course.course_name if course else "Môn học" }}
                 </h1>
-                <p class="text-gray-600">Môn học: <span class="font-semibold">{{ course.name }} ({{ course.id }})</span></p>
+                <p class="text-gray-600">Mã môn học: <span class="font-semibold">{{ course.course_code if course else "N/A" }}</span></p>
             </div>
-            <a href="{{ url_for('student_flashcard_hub') }}" class="mt-4 sm:mt-0 bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg transition-colors flex items-center self-start sm:self-center">
+            <a href="{{ url_for('student_dashboard') }}#courses" class="mt-4 sm:mt-0 bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg transition-colors flex items-center self-start sm:self-center">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 mr-2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3" /></svg>
-                Quay lại Flashcard Hub
+                Quay lại Môn học
             </a>
         </div>
 
         <div class="bg-white p-6 md:p-8 rounded-xl shadow-lg">
             <h2 class="text-xl font-semibold text-gray-700 mb-4">
-                Danh sách các buổi học của môn "{{ course.name }}":
+                Danh sách các buổi học:
             </h2>
             {% if sessions and sessions|length > 0 %}
-                <ul class="space-y-2 max-h-96 overflow-y-auto">
+                <ul class="space-y-3">
                     {% for session_item in sessions %}
-                    <li>
-                        {% if action_type == 'create' %}
-                            <a href="{{ url_for('student_create_flashcard_for_session', course_id=course.id, date_str=session_item.date) }}" class="session-select-item">
-                                <span class="session-title">{{ session_item.title }}</span> - 
-                                <span class="session-date">Ngày: {{ session_item.date | format_date_display }}</span>
+                    <li class="session-select-item">
+                        <div class="session-info-container">
+                            <span class="session-title">{{ session_item.session_title if session_item.session_title else "Buổi học" }}</span> -
+                            <span class="session-date">Ngày: {{ session_item.session_date | format_date_display if session_item.session_date else "Chưa có ngày" }}</span>
+                        </div>
+                        <div class="action-links-container">
+                            <a href="{{ url_for('course_notes_overview', session_id=session_item.id) }}" class="action-btn action-btn-notes">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
+                                </svg>
+                                Ghi chú
                             </a>
-                        {% elif action_type == 'view' %}
-                             <a href="{{ url_for('student_view_flashcard_for_session', course_id=course.id, date_str=session_item.date) }}" class="session-select-item">
-                                <span class="session-title">{{ session_item.title }}</span> - 
-                                <span class="session-date">Ngày: {{ session_item.date | format_date_display }}</span>
-                            </a>
-                        {% endif %}
+
+                            {% if action_type and 'flashcard' in action_type %}
+                                {% if action_type == 'student_create_flashcard_for_session' %}
+                                    <a href="{{ url_for('student_create_flashcard_for_session', course_id=course.id, session_id=session_item.id) }}" class="action-btn action-btn-flashcards">
+                                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
+                                        Tạo Flashcard
+                                    </a>
+                                {% elif action_type == 'student_view_flashcard_for_session' %}
+                                     <a href="{{ url_for('student_view_flashcards_for_session', course_id=course.id, session_id=session_item.id) }}" class="action-btn action-btn-flashcards">
+                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                                        Xem Flashcard
+                                    </a>
+                                {% endif %}
+                            {% endif %}
+                        </div>
                     </li>
                     {% endfor %}
                 </ul>
             {% else %}
-                <p class="text-gray-500">Không có buổi học nào được tìm thấy cho môn này để {{ 'tạo' if action_type == 'create' else 'xem' }} flashcards.</p>
+                <p class="text-gray-500">Không có buổi học nào được tìm thấy cho môn này.</p>
             {% endif %}
         </div>
 
         <footer class="text-center mt-12 text-sm text-gray-500">
-            <p>&copy; <span id="current-year-select-session">2025</span> UMT Learning Assistant.</p>
+            <p>&copy; <span id="current-year-select-session">{{ current_year if current_year else "2025" }}</span> UMT Learning Assistant.</p>
         </footer>
     </div>
     <script>
-        document.getElementById('current-year-select-session').textContent = new Date().getFullYear();
+        // Nếu bạn không truyền current_year từ Flask, bạn có thể đặt nó bằng JavaScript
+        if (!document.getElementById('current-year-select-session').textContent.trim()) {
+            document.getElementById('current-year-select-session').textContent = new Date().getFullYear();
+        }
     </script>
 </body>
 </html>
+
+
