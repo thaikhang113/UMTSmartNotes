@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Làm Quiz: {{ quiz.title if quiz else 'Quiz' }} - {{ course_name }}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/heroicons/2.0.18/24/outline/heroicons.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .question-card {
+            background-color: white;
+            border: 1px solid #e5e7eb; /* gray-200 */
+            border-radius: 0.5rem; /* rounded-lg */
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .question-text {
+            font-weight: 600; /* semibold */
+            font-size: 1.125rem; /* text-lg */
+            color: #1f2937; /* gray-800 */
+            margin-bottom: 1rem;
+        }
+        .option-label {
+            display: block;
+            padding: 0.75rem 1rem;
+            border: 1px solid #d1d5db; /* gray-300 */
+            border-radius: 0.375rem; /* rounded-md */
+            margin-bottom: 0.5rem;
+            cursor: pointer;
+            transition: background-color 0.2s, border-color 0.2s;
+        }
+        .option-label:hover {
+            background-color: #f3f4f6; /* gray-100 */
+        }
+        .option-label input[type="radio"] {
+            margin-right: 0.75rem;
+            width: 1rem;
+            height: 1rem;
+            accent-color: #2563eb; /* blue-600 */
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <div class="container mx-auto p-6 md:p-8 max-w-3xl">
+        <div class="mb-8 pb-4 border-b border-gray-300">
+            <h1 class="text-2xl md:text-3xl font-bold text-gray-800">
+                {{ quiz.title if quiz else 'Làm Quiz' }}
+            </h1>
+            <p class="text-gray-600">Môn học: <span class="font-semibold">{{ course_name }}</span></p>
+            {% if session_title %}
+            <p class="text-gray-600">Buổi học: <span class="font-semibold">{{ session_title }}</span></p>
+            {% endif %}
+        </div>
+
+        {% if quiz and quiz.questions %}
+        <form method="POST" action="{{ url_for('student_submit_quiz', quiz_id=quiz_id) }}">
+            {% for question in quiz.questions %}
+            <div class="question-card">
+                <p class="question-text">{{ loop.index }}. {{ question.text }}</p>
+                <div class="space-y-2">
+                    {% for option in question.options %}
+                    <label class="option-label">
+                        <input type="radio" name="question_{{ question.id }}" value="{{ option }}" required>
+                        <span>{{ option }}</span>
+                    </label>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endfor %}
+
+            <div class="mt-8">
+                <button type="submit"
+                        class="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-4 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors text-lg">
+                    Nộp bài
+                </button>
+            </div>
+        </form>
+        {% else %}
+        <div class="bg-white p-6 rounded-xl shadow-lg text-center">
+            <p class="text-gray-500">Không có câu hỏi nào trong quiz này hoặc quiz không tồn tại.</p>
+            <a href="{{ url_for('student_dashboard') }}" class="mt-4 inline-block bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg">
+                Quay lại Dashboard
+            </a>
+        </div>
+        {% endif %}
+
+        <footer class="text-center mt-12 text-sm text-gray-500">
+            <p>&copy; <span id="current-year-take-quiz">2025</span> UMT Learning Assistant.</p>
+        </footer>
+    </div>
+    <script>
+        document.getElementById('current-year-take-quiz').textContent = new Date().getFullYear();
+    </script>
+</body>
+</html>

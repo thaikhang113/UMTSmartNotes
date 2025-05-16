@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ghi chú môn {{ course.name if course else 'Môn học' }} - Ngày {{ note_date | format_date_display if note_date else 'Không rõ' }}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/heroicons/2.0.18/24/outline/heroicons.min.css" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .editor-toolbar button {
+            background-color: #f3f4f6; border: 1px solid #d1d5db; padding: 0.5rem 0.75rem;
+            margin-right: 0.25rem; border-radius: 0.375rem; cursor: pointer;
+        }
+        .editor-toolbar button:hover { background-color: #e5e7eb; }
+        #note-content-area {
+            min-height: calc(100vh - 250px); /* Điều chỉnh chiều cao để vừa màn hình hơn */
+            border: 1px solid #d1d5db; padding: 1rem;
+            border-radius: 0.375rem; background-color: white;
+            overflow-y: auto; /* Cho phép cuộn nếu nội dung dài */
+        }
+        .material-viewer {
+            height: calc(100vh - 200px); /* Chiều cao cho trình xem tài liệu */
+            border: 1px solid #d1d5db;
+            border-radius: 0.375rem;
+            background-color: #f9fafb; /* gray-50 */
+        }
+        .material-viewer iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <div class="container mx-auto p-4 md:p-6">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 pb-3 border-b border-gray-300">
+            <div>
+                <h1 class="text-xl md:text-2xl font-bold text-gray-800">
+                    Ghi chú môn: <span class="text-blue-600">{{ course.name if course else "Không rõ môn học" }}</span>
+                </h1>
+                <p class="text-md text-gray-600">Ngày: {{ note_date | format_date_display if note_date else "Không rõ ngày" }}</p>
+            </div>
+            <a href="{{ url_for('student_course_notes_overview', course_id=course.id) }}" class="mt-3 sm:mt-0 bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-3 rounded-lg transition-colors flex items-center self-start sm:self-center text-sm">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4 mr-2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3" />
+                </svg>
+                Quay lại Tổng quan Môn học
+            </a>
+        </div>
+
+        <div class="flex flex-col lg:flex-row gap-6">
+            <div class="lg:w-1/2 bg-white p-4 rounded-xl shadow-lg">
+                <h2 class="text-lg font-semibold text-gray-700 mb-3">Tài liệu Buổi học</h2>
+                <div class="material-viewer">
+                    {% if material_url %}
+                        {% if material_url.lower().endswith('.pdf') %}
+                            <iframe src="{{ material_url }}" title="Tài liệu PDF">
+                                Trình duyệt của bạn không hỗ trợ hiển thị PDF. Bạn có thể <a href="{{ material_url }}" target="_blank" class="text-blue-500 hover:underline">tải về tại đây</a>.
+                            </iframe>
+                        {% else %}
+                            <p class="p-4 text-gray-600">
+                                Tài liệu cho buổi học này: 
+                                <a href="{{ material_url }}" target="_blank" class="text-blue-500 hover:underline break-all">{{ material_url }}</a>
+                                <br><br>(Hiện tại chỉ hỗ trợ nhúng PDF trực tiếp. Các loại file khác sẽ hiển thị dưới dạng link.)
+                            </p>
+                        {% endif %}
+                    {% else %}
+                        <p class="p-4 text-gray-500 text-center flex items-center justify-center h-full">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-10 h-10 mr-2 text-gray-400">
+                              <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.121 12.121a2.25 2.25 0 003.182 0l4.5-4.5a2.25 2.25 0 00-3.182-3.182L10.5 11.25a2.25 2.25 0 003.182 3.182l4.5-4.5M8.25 15h7.5" />
+                            </svg>
+                            Chưa có tài liệu nào được tải lên cho buổi học này.
+                        </p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="lg:w-1/2 bg-white p-4 rounded-xl shadow-lg">
+                <h2 class="text-lg font-semibold text-gray-700 mb-3">Ghi chú của bạn</h2>
+                <div class="editor-toolbar mb-2">
+                    <button onclick="formatDoc('bold');" title="In đậm"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0011.667 0l3.181-3.183m-4.991-2.691V5.25a2.25 2.25 0 00-2.25-2.25H5.25a2.25 2.25 0 00-2.25 2.25v4.992m14.006 0v4.992a2.25 2.25 0 01-2.25 2.25H5.25a2.25 2.25 0 01-2.25-2.25v-4.992" /></svg></button>
+                    <button onclick="formatDoc('italic');" title="In nghiêng"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25H12" /></svg></button>
+                    <button onclick="formatDoc('underline');" title="Gạch chân"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 12h-15" /></svg></button>
+                    <button onclick="formatDoc('insertUnorderedList');" title="Danh sách gạch đầu dòng"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 6.75h7.5M8.25 12h7.5m-7.5 5.25h7.5M3.75 6.75h.007v.008H3.75V6.75zm.375 0a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM3.75 12h.007v.008H3.75V12zm.375 0a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM3.75 17.25h.007v.008H3.75v-.008zm.375 0a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" /></svg></button>
+                </div>
+                <div id="note-content-area" contenteditable="true">
+                    </div>
+                <div class="mt-4 flex justify-end space-x-3">
+                    <button class="bg-gray-500 hover:bg-gray-600 text-white font-semibold py-2 px-3 rounded-lg transition-colors text-sm">Hủy</button>
+                    <button id="save-note-button" class="bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-3 rounded-lg transition-colors text-sm">Lưu ghi chú</button>
+                </div>
+            </div>
+        </div>
+
+        <footer class="text-center mt-8 text-sm text-gray-500">
+            <p>&copy; <span id="current-year-footer-notes">2025</span> UMT Learning Assistant.</p>
+        </footer>
+    </div>
+    <script>
+        function formatDoc(command, value = null) {
+            document.execCommand(command, false, value);
+            document.getElementById('note-content-area').focus();
+        }
+
+        const saveNoteButton = document.getElementById('save-note-button');
+        const noteContentArea = document.getElementById('note-content-area');
+        
+        const courseId = "{{ course.id | e if course else 'unknown_course' }}";
+        const noteDate = "{{ note_date | e if note_date else 'unknown_date' }}";
+        const noteStorageKey = `note_${courseId}_${noteDate}`;
+
+        if (localStorage.getItem(noteStorageKey)) {
+            noteContentArea.innerHTML = localStorage.getItem(noteStorageKey);
+        } else {
+            noteContentArea.innerHTML = `<p>Bắt đầu ghi chú cho ngày ${noteDate} của môn ${courseId}...</p><p><br></p><p>Gợi ý: Bạn có thể sử dụng các nút định dạng ở trên.</p>`;
+        }
+
+        saveNoteButton.addEventListener('click', () => {
+            const noteContent = noteContentArea.innerHTML;
+            localStorage.setItem(noteStorageKey, noteContent);
+            alert(`Ghi chú cho ngày ${noteDate} của môn ${courseId} đã được lưu!`);
+        });
+        
+        document.getElementById('current-year-footer-notes').textContent = new Date().getFullYear();
+    </script>
+</body>
+</html>

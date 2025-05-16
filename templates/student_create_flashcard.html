@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ context_title if context_title else "Tạo Flashcard Mới" }}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/heroicons/2.0.18/24/outline/heroicons.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        /* Thêm style nếu cần */
+    </style>
+</head>
+<body class="bg-gray-100">
+    <div class="container mx-auto p-6 md:p-8 max-w-2xl">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 pb-4 border-b border-gray-300">
+            <div>
+                <h1 class="text-2xl md:text-3xl font-bold text-gray-800">
+                    {{ context_title if context_title else "Tạo Flashcard Mới" }}
+                </h1>
+                {% if course and session_event %}
+                    <p class="text-sm text-gray-500">Môn: {{ course.name }} | Buổi: {{ session_event.title.split(' - ')[-1] }} ({{ session_event.date | format_date_display }})</p>
+                {% elif course %}
+                     <p class="text-sm text-gray-500">Môn: {{ course.name }}</p>
+                {% endif %}
+            </div>
+            <a href="{{ url_for('student_flashcard_hub') }}" class="mt-4 sm:mt-0 bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg transition-colors flex items-center self-start sm:self-center">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 mr-2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3" /></svg>
+                Quay lại Flashcard Hub
+            </a>
+        </div>
+
+        <div class="bg-white p-6 md:p-8 rounded-xl shadow-lg">
+            <form id="create-flashcard-form">
+                <div class="space-y-6">
+                    <div>
+                        <label for="new-flashcard-front" class="block text-sm font-medium text-gray-700">Mặt trước (Câu hỏi/Thuật ngữ):</label>
+                        <textarea id="new-flashcard-front" name="front" rows="4" required
+                                  class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500 sm:text-sm"
+                                  placeholder="Ví dụ: Thủ đô của Việt Nam là gì?"></textarea>
+                    </div>
+                    <div>
+                        <label for="new-flashcard-back" class="block text-sm font-medium text-gray-700">Mặt sau (Trả lời/Định nghĩa):</label>
+                        <textarea id="new-flashcard-back" name="back" rows="4" required
+                                  class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500 sm:text-sm"
+                                  placeholder="Ví dụ: Hà Nội"></textarea>
+                    </div>
+                    <div>
+                        <button type="submit"
+                                class="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2.5 px-4 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition-colors">
+                            Lưu Flashcard
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <footer class="text-center mt-12 text-sm text-gray-500">
+            <p>&copy; <span id="current-year-create-fc">2025</span> UMT Learning Assistant.</p>
+        </footer>
+    </div>
+    <script>
+        document.getElementById('current-year-create-fc').textContent = new Date().getFullYear();
+        const createFlashcardForm = document.getElementById('create-flashcard-form');
+        const courseId = "{{ course.id | default('general', true) | e }}"; // 'general' nếu không có course.id
+        const sessionDate = "{{ session_event.date | default('', true) | e }}"; // '' nếu không có session_event.date
+
+        createFlashcardForm.addEventListener('submit', function(event) {
+            event.preventDefault();
+            const front = document.getElementById('new-flashcard-front').value.trim();
+            const back = document.getElementById('new-flashcard-back').value.trim();
+
+            if (front && back) {
+                let storageKey = 'flashcards_umt_general'; // Mặc định cho flashcard chung
+                if (courseId !== 'general' && sessionDate) {
+                    storageKey = `flashcards_umt_${courseId}_${sessionDate}`;
+                } else if (courseId !== 'general') {
+                    // Có thể có trường hợp tạo flashcard cho môn học nhưng không theo buổi cụ thể
+                    // storageKey = `flashcards_umt_course_${courseId}`; 
+                    // Hiện tại, nếu không có sessionDate, vẫn lưu vào general để đơn giản
+                }
+
+                let existingFlashcards = JSON.parse(localStorage.getItem(storageKey)) || [];
+                existingFlashcards.push({ front, back, id: Date.now().toString() }); // Thêm ID duy nhất
+                localStorage.setItem(storageKey, JSON.stringify(existingFlashcards));
+                
+                alert('Flashcard đã được lưu!');
+                // Xóa nội dung form
+                document.getElementById('new-flashcard-front').value = '';
+                document.getElementById('new-flashcard-back').value = '';
+                // Có thể chuyển hướng người dùng hoặc cập nhật UI
+                // window.location.href = "{{ url_for('student_flashcard_hub') }}";
+            } else {
+                alert('Vui lòng nhập đầy đủ cả mặt trước và mặt sau của flashcard.');
+            }
+        });
+    </script>
+</body>
+</html>
